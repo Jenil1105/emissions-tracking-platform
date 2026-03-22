@@ -21,4 +21,18 @@ export class InMemoryRouteRepository implements RouteRepository {
       return matchesVesselType && matchesFuelType && matchesYear;
     });
   }
+
+  setBaseline(id: number): Route | undefined {
+    const selectedRoute = routes.find((route) => route.id === id);
+
+    if (!selectedRoute) {
+      return undefined;
+    }
+
+    for (const route of routes) {
+      route.isBaseline = route.id === id;
+    }
+
+    return selectedRoute;
+  }
 }
