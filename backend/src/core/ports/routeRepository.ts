@@ -8,7 +8,8 @@ export type RouteFilters = {
 
 export interface RouteRepository {
   getAll(filters?: RouteFilters): Route[];
-  setBaseline(id: number): Route | undefined;
+  setBaseline(routeId: string): Route | undefined;
   getBaseline(): Route | undefined;
-  findByShipAndYear(shipId: string, year: number): Route | undefined;
+  getByYear(year: number): Route[];
+  getByShipIdAndYear(shipId: string, year: number): Route | undefined;
 }

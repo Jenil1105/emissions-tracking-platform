@@ -22,15 +22,15 @@ export class InMemoryRouteRepository implements RouteRepository {
     });
   }
 
-  setBaseline(id: number): Route | undefined {
-    const selectedRoute = routes.find((route) => route.id === id);
+  setBaseline(routeId: string): Route | undefined {
+    const selectedRoute = routes.find((route) => route.routeId === routeId);
 
     if (!selectedRoute) {
       return undefined;
     }
 
     for (const route of routes) {
-      route.isBaseline = route.id === id;
+      route.isBaseline = route.routeId === routeId;
     }
 
     return selectedRoute;
@@ -40,7 +40,11 @@ export class InMemoryRouteRepository implements RouteRepository {
     return routes.find((route) => route.isBaseline);
   }
 
-  findByShipAndYear(shipId: string, year: number): Route | undefined {
+  getByYear(year: number): Route[] {
+    return routes.filter((route) => route.year === year);
+  }
+
+  getByShipIdAndYear(shipId: string, year: number): Route | undefined {
     return routes.find((route) => route.shipId === shipId && route.year === year);
   }
 }

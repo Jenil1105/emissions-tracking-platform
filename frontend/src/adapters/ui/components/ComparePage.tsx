@@ -37,7 +37,6 @@ function ComparePage({ comparisonData, loading, error }: ComparePageProps) {
           <div style={{ marginBottom: "20px" }}>
             <h3>Baseline Route</h3>
             <p>Route ID: {comparisonData.baseline.routeId}</p>
-            <p>Ship ID: {comparisonData.baseline.shipId}</p>
             <p>GHG Intensity: {comparisonData.baseline.ghgIntensity}</p>
           </div>
 
@@ -95,7 +94,6 @@ function ComparePage({ comparisonData, loading, error }: ComparePageProps) {
             <thead>
               <tr>
                 <th>Route ID</th>
-                <th>Ship ID</th>
                 <th>GHG Intensity</th>
                 <th>% Difference</th>
                 <th>Compliant</th>
@@ -105,7 +103,6 @@ function ComparePage({ comparisonData, loading, error }: ComparePageProps) {
               {comparisonData.comparisonRoutes.map((route) => (
                 <tr key={route.id}>
                   <td>{route.routeId}</td>
-                  <td>{route.shipId}</td>
                   <td>{route.ghgIntensity}</td>
                   <td>{route.percentDiff.toFixed(2)}%</td>
                   <td>{route.compliant ? "Yes" : "No"}</td>

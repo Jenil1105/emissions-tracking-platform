@@ -2,16 +2,16 @@ import type { BankingRecordsResponse, ComplianceBalanceResponse, Route } from ".
 
 type BankingPageProps = {
   routes: Route[];
-  selectedShipId: string;
   selectedYear: string;
+  selectedShipId: string;
   complianceBalance: ComplianceBalanceResponse | null;
   bankingRecords: BankingRecordsResponse | null;
   loading: boolean;
   error: string;
   bankAmount: string;
   applyAmount: string;
-  onShipChange: (shipId: string) => void;
   onYearChange: (year: string) => void;
+  onShipChange: (shipId: string) => void;
   onBankAmountChange: (value: string) => void;
   onApplyAmountChange: (value: string) => void;
   onBank: () => void;
@@ -20,43 +20,46 @@ type BankingPageProps = {
 
 function BankingPage({
   routes,
-  selectedShipId,
   selectedYear,
+  selectedShipId,
   complianceBalance,
   bankingRecords,
   loading,
   error,
   bankAmount,
   applyAmount,
-  onShipChange,
   onYearChange,
+  onShipChange,
   onBankAmountChange,
   onApplyAmountChange,
   onBank,
   onApply,
 }: BankingPageProps) {
-  const shipOptions = Array.from(new Set(routes.map((route) => route.shipId)));
   const yearOptions = Array.from(new Set(routes.map((route) => String(route.year))));
+  const shipOptions = routes.filter((route) => !selectedYear || String(route.year) === selectedYear);
+  const canBank = (complianceBalance?.cbAfter ?? complianceBalance?.cbBefore ?? 0) > 0;
+  const canApply = (complianceBalance?.cbAfter ?? complianceBalance?.cbBefore ?? 0) < 0
+    && (bankingRecords?.totalBanked ?? 0) > 0;
 
   return (
     <>
       <h2>Banking Page</h2>
 
       <div style={{ marginBottom: "20px", display: "flex", gap: "12px" }}>
-        <select value={selectedShipId} onChange={(event) => onShipChange(event.target.value)}>
-          <option value="">Select Ship</option>
-          {shipOptions.map((shipId) => (
-            <option key={shipId} value={shipId}>
-              {shipId}
-            </option>
-          ))}
-        </select>
-
         <select value={selectedYear} onChange={(event) => onYearChange(event.target.value)}>
           <option value="">Select Year</option>
           {yearOptions.map((year) => (
             <option key={year} value={year}>
               {year}
+            </option>
+          ))}
+        </select>
+
+        <select value={selectedShipId} onChange={(event) => onShipChange(event.target.value)}>
+          <option value="">Select Ship</option>
+          {shipOptions.map((route) => (
+            <option key={`${route.year}-${route.shipId}`} value={route.shipId}>
+              {route.shipId} ({route.routeId})
             </option>
           ))}
         </select>
@@ -67,6 +70,11 @@ function BankingPage({
 
       {!loading && !error && complianceBalance && (
         <div style={{ marginBottom: "20px" }}>
+          <p>Ship ID: {complianceBalance.shipId}</p>
+          <p>Route ID: {complianceBalance.routeId}</p>
+          <p>CB Before: {complianceBalance.cbBefore.toFixed(2)}</p>
+          <p>Applied: {(complianceBalance.applied ?? 0).toFixed(2)}</p>
+          <p>CB After: {(complianceBalance.cbAfter ?? complianceBalance.cbBefore).toFixed(2)}</p>
           <p>Compliance Balance: {complianceBalance.complianceBalance.toFixed(2)}</p>
           <p>Energy In Scope: {complianceBalance.energyInScope.toFixed(2)}</p>
           <p>GHG Intensity: {complianceBalance.ghgIntensity}</p>
@@ -86,7 +94,7 @@ function BankingPage({
               value={bankAmount}
               onChange={(event) => onBankAmountChange(event.target.value)}
             />
-            <button onClick={onBank}>Bank Surplus</button>
+            <button disabled={!canBank} onClick={onBank}>Bank Surplus</button>
           </div>
 
           <div style={{ marginBottom: "20px", display: "flex", gap: "12px" }}>
@@ -96,7 +104,7 @@ function BankingPage({
               value={applyAmount}
               onChange={(event) => onApplyAmountChange(event.target.value)}
             />
-            <button onClick={onApply}>Apply Banked</button>
+            <button disabled={!canApply} onClick={onApply}>Apply Banked</button>
           </div>
 
           <table border={1} cellPadding={10} style={{ borderCollapse: "collapse", width: "100%" }}>

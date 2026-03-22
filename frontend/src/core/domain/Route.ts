@@ -37,14 +37,45 @@ export type BankingRecord = {
 };
 
 export type BankingRecordsResponse = {
+  shipId: string;
+  year: number;
   records: BankingRecord[];
+  banked: number;
+  applied: number;
   totalBanked: number;
 };
 
 export type ComplianceBalanceResponse = {
   shipId: string;
+  routeId: string;
   year: number;
   ghgIntensity: number;
   energyInScope: number;
   complianceBalance: number;
+  cbBefore: number;
+  applied?: number;
+  cbAfter?: number;
+};
+
+export type AdjustedComplianceBalance = {
+  shipId: string;
+  routeId: string;
+  year: number;
+  cbBefore: number;
+  banked: number;
+  applied: number;
+  adjustedCb: number;
+};
+
+export type PoolMember = {
+  shipId: string;
+  routeId: string;
+  cbBefore: number;
+  cbAfter: number;
+};
+
+export type PoolResponse = {
+  id: number;
+  year: number;
+  members: PoolMember[];
 };

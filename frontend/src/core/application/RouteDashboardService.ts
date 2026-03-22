@@ -1,7 +1,9 @@
 import type {
+  AdjustedComplianceBalance,
   BankingRecordsResponse,
   ComparisonResponse,
   ComplianceBalanceResponse,
+  PoolResponse,
   Route,
   RouteFilters,
 } from "../domain/Route";
@@ -18,8 +20,8 @@ export class RouteDashboardService {
     return this.routeGateway.getRoutes(filters);
   }
 
-  setBaseline(id: number): Promise<void> {
-    return this.routeGateway.setBaseline(id);
+  setBaseline(routeId: string): Promise<void> {
+    return this.routeGateway.setBaseline(routeId);
   }
 
   getComparison(): Promise<ComparisonResponse> {
@@ -40,5 +42,13 @@ export class RouteDashboardService {
 
   applyBanked(shipId: string, year: number, amount: number): Promise<void> {
     return this.routeGateway.applyBanked(shipId, year, amount);
+  }
+
+  getAdjustedComplianceBalances(year: number): Promise<AdjustedComplianceBalance[]> {
+    return this.routeGateway.getAdjustedComplianceBalances(year);
+  }
+
+  createPool(year: number, shipIds: string[]): Promise<PoolResponse> {
+    return this.routeGateway.createPool(year, shipIds);
   }
 }

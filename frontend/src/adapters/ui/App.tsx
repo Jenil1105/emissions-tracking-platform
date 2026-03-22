@@ -1,8 +1,10 @@
 import { useEffect, useMemo, useState } from "react";
 import type {
+  AdjustedComplianceBalance,
   BankingRecordsResponse,
   ComparisonResponse,
   ComplianceBalanceResponse,
+  PoolResponse,
   Route,
 } from "../../core/domain/Route";
 import { RouteDashboardService } from "../../core/application/RouteDashboardService";
@@ -10,11 +12,13 @@ import { HttpRouteGateway } from "../infrastructure/HttpRouteGateway";
 import BankingPage from "./components/BankingPage";
 import ComparePage from "./components/ComparePage";
 import PageTabs from "./components/PageTabs";
+import PoolingPage from "./components/PoolingPage";
 import RoutesPage from "./components/RoutesPage";
 import "../../App.css";
 
 function App() {
-  const [activePage, setActivePage] = useState<"routes" | "compare" | "banking">("routes");
+  const [activePage, setActivePage] = useState<"routes" | "compare" | "banking" | "pooling">("routes");
+  const [allRoutes, setAllRoutes] = useState<Route[]>([]);
   const [routes, setRoutes] = useState<Route[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -24,14 +28,20 @@ function App() {
   const [comparisonData, setComparisonData] = useState<ComparisonResponse | null>(null);
   const [comparisonLoading, setComparisonLoading] = useState(false);
   const [comparisonError, setComparisonError] = useState("");
-  const [selectedShipId, setSelectedShipId] = useState("");
   const [selectedBankingYear, setSelectedBankingYear] = useState("");
+  const [selectedBankingShipId, setSelectedBankingShipId] = useState("");
   const [complianceBalance, setComplianceBalance] = useState<ComplianceBalanceResponse | null>(null);
   const [bankingRecords, setBankingRecords] = useState<BankingRecordsResponse | null>(null);
   const [bankingLoading, setBankingLoading] = useState(false);
   const [bankingError, setBankingError] = useState("");
   const [bankAmount, setBankAmount] = useState("");
   const [applyAmount, setApplyAmount] = useState("");
+  const [selectedPoolingYear, setSelectedPoolingYear] = useState("");
+  const [adjustedBalances, setAdjustedBalances] = useState<AdjustedComplianceBalance[]>([]);
+  const [selectedShipIds, setSelectedShipIds] = useState<string[]>([]);
+  const [poolResult, setPoolResult] = useState<PoolResponse | null>(null);
+  const [poolingLoading, setPoolingLoading] = useState(false);
+  const [poolingError, setPoolingError] = useState("");
 
   const routeDashboardService = useMemo(() => {
     return new RouteDashboardService(new HttpRouteGateway());
@@ -56,6 +66,15 @@ function App() {
     }
   };
 
+  const fetchAllRoutes = async () => {
+    try {
+      const data = await routeDashboardService.getRoutes();
+      setAllRoutes(data);
+    } catch {
+      // Keep the tab-specific loaders responsible for visible errors.
+    }
+  };
+
   const fetchComparison = async () => {
     try {
       setComparisonLoading(true);
@@ -70,10 +89,11 @@ function App() {
     }
   };
 
-  const setBaseline = async (id: number) => {
+  const setBaseline = async (routeId: string) => {
     try {
-      await routeDashboardService.setBaseline(id);
+      await routeDashboardService.setBaseline(routeId);
       await fetchRoutes();
+      await fetchAllRoutes();
       await fetchComparison();
     } catch {
       setError("Could not update baseline");
@@ -82,6 +102,8 @@ function App() {
 
   const fetchBankingData = async (shipId: string, year: string) => {
     if (!shipId || !year) {
+      setComplianceBalance(null);
+      setBankingRecords(null);
       return;
     }
 
@@ -94,50 +116,93 @@ function App() {
         routeDashboardService.getBankingRecords(shipId, Number(year)),
       ]);
 
-      setComplianceBalance(nextComplianceBalance);
+      setComplianceBalance({
+        ...nextComplianceBalance,
+        applied: nextBankingRecords.applied,
+        cbAfter: nextComplianceBalance.cbBefore - nextBankingRecords.totalBanked,
+      });
       setBankingRecords(nextBankingRecords);
-    } catch {
-      setBankingError("Could not load banking data");
+    } catch (error) {
+      setBankingError(error instanceof Error ? error.message : "Could not load banking data");
     } finally {
       setBankingLoading(false);
     }
   };
 
   const handleBank = async () => {
-    if (!selectedShipId || !selectedBankingYear) {
+    if (!selectedBankingShipId || !selectedBankingYear) {
       return;
     }
 
     try {
       setBankingError("");
       await routeDashboardService.bankSurplus(
-        selectedShipId,
+        selectedBankingShipId,
         Number(selectedBankingYear),
         bankAmount ? Number(bankAmount) : undefined
       );
-      await fetchBankingData(selectedShipId, selectedBankingYear);
+      await fetchBankingData(selectedBankingShipId, selectedBankingYear);
       setBankAmount("");
-    } catch {
-      setBankingError("Could not bank surplus");
+    } catch (error) {
+      setBankingError(error instanceof Error ? error.message : "Could not bank surplus");
     }
   };
 
   const handleApply = async () => {
-    if (!selectedShipId || !selectedBankingYear || !applyAmount) {
+    if (!selectedBankingShipId || !selectedBankingYear || !applyAmount) {
       return;
     }
 
     try {
       setBankingError("");
       await routeDashboardService.applyBanked(
-        selectedShipId,
+        selectedBankingShipId,
         Number(selectedBankingYear),
         Number(applyAmount)
       );
-      await fetchBankingData(selectedShipId, selectedBankingYear);
+      await fetchBankingData(selectedBankingShipId, selectedBankingYear);
       setApplyAmount("");
-    } catch {
-      setBankingError("Could not apply banked surplus");
+    } catch (error) {
+      setBankingError(error instanceof Error ? error.message : "Could not apply banked surplus");
+    }
+  };
+
+  const fetchPoolingData = async (year: string) => {
+    if (!year) {
+      return;
+    }
+
+    try {
+      setPoolingLoading(true);
+      setPoolingError("");
+      const data = await routeDashboardService.getAdjustedComplianceBalances(Number(year));
+      setAdjustedBalances(data);
+    } catch (error) {
+      setPoolingError(error instanceof Error ? error.message : "Could not load pooling data");
+    } finally {
+      setPoolingLoading(false);
+    }
+  };
+
+  const handleShipToggle = (shipId: string) => {
+    setSelectedShipIds((current) =>
+      current.includes(shipId)
+        ? current.filter((id) => id !== shipId)
+        : [...current, shipId]
+    );
+  };
+
+  const handleCreatePool = async () => {
+    if (!selectedPoolingYear || selectedShipIds.length === 0) {
+      return;
+    }
+
+    try {
+      setPoolingError("");
+      const result = await routeDashboardService.createPool(Number(selectedPoolingYear), selectedShipIds);
+      setPoolResult(result);
+    } catch (error) {
+      setPoolingError(error instanceof Error ? error.message : "Could not create pool");
     }
   };
 
@@ -146,12 +211,33 @@ function App() {
   }, [vesselType, fuelType, year]);
 
   useEffect(() => {
+    void fetchAllRoutes();
+  }, []);
+
+  useEffect(() => {
     void fetchComparison();
   }, []);
 
   useEffect(() => {
-    void fetchBankingData(selectedShipId, selectedBankingYear);
-  }, [selectedShipId, selectedBankingYear]);
+    void fetchBankingData(selectedBankingShipId, selectedBankingYear);
+  }, [selectedBankingShipId, selectedBankingYear]);
+
+  useEffect(() => {
+    void fetchPoolingData(selectedPoolingYear);
+  }, [selectedPoolingYear]);
+
+  useEffect(() => {
+    setSelectedBankingShipId("");
+    setComplianceBalance(null);
+    setBankingRecords(null);
+    setBankingError("");
+  }, [selectedBankingYear]);
+
+  useEffect(() => {
+    setSelectedShipIds([]);
+    setPoolResult(null);
+    setPoolingError("");
+  }, [selectedPoolingYear]);
 
   return (
     <div style={{ padding: "24px" }}>
@@ -165,7 +251,7 @@ function App() {
           fuelType={fuelType}
           loading={loading}
           onFuelTypeChange={setFuelType}
-          onSetBaseline={(id) => void setBaseline(id)}
+          onSetBaseline={(routeId) => void setBaseline(routeId)}
           onVesselTypeChange={setVesselType}
           onYearChange={setYear}
           routes={routes}
@@ -190,11 +276,26 @@ function App() {
           onApplyAmountChange={setApplyAmount}
           onBank={() => void handleBank()}
           onBankAmountChange={setBankAmount}
-          onShipChange={setSelectedShipId}
+          onShipChange={setSelectedBankingShipId}
           onYearChange={setSelectedBankingYear}
-          routes={routes}
-          selectedShipId={selectedShipId}
+          routes={allRoutes}
+          selectedShipId={selectedBankingShipId}
           selectedYear={selectedBankingYear}
+        />
+      )}
+
+      {activePage === "pooling" && (
+        <PoolingPage
+          adjustedBalances={adjustedBalances}
+          error={poolingError}
+          loading={poolingLoading}
+          onCreatePool={() => void handleCreatePool()}
+          onShipToggle={handleShipToggle}
+          onYearChange={setSelectedPoolingYear}
+          poolResult={poolResult}
+          routes={allRoutes}
+          selectedShipIds={selectedShipIds}
+          selectedYear={selectedPoolingYear}
         />
       )}
     </div>

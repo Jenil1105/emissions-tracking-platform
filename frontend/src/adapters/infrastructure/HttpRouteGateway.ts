@@ -1,13 +1,24 @@
 import type {
+  AdjustedComplianceBalance,
   BankingRecordsResponse,
   ComparisonResponse,
   ComplianceBalanceResponse,
+  PoolResponse,
   Route,
   RouteFilters,
 } from "../../core/domain/Route";
 import type { RouteGateway } from "../../core/ports/RouteGateway";
 
 const API_BASE_URL = "http://localhost:3000";
+
+async function getErrorMessage(response: Response, fallbackMessage: string) {
+  try {
+    const data = (await response.json()) as { error?: string; message?: string };
+    return data.error ?? data.message ?? fallbackMessage;
+  } catch {
+    return fallbackMessage;
+  }
+}
 
 export class HttpRouteGateway implements RouteGateway {
   async getRoutes(filters?: RouteFilters): Promise<Route[]> {
@@ -35,13 +46,13 @@ export class HttpRouteGateway implements RouteGateway {
     return response.json();
   }
 
-  async setBaseline(id: number): Promise<void> {
-    const response = await fetch(`${API_BASE_URL}/routes/${id}/baseline`, {
+  async setBaseline(routeId: string): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/routes/${routeId}/baseline`, {
       method: "POST",
     });
 
     if (!response.ok) {
-      throw new Error("Failed to set baseline");
+      throw new Error(await getErrorMessage(response, "Failed to set baseline"));
     }
   }
 
@@ -49,7 +60,7 @@ export class HttpRouteGateway implements RouteGateway {
     const response = await fetch(`${API_BASE_URL}/routes/comparison`);
 
     if (!response.ok) {
-      throw new Error("Failed to fetch comparison");
+      throw new Error(await getErrorMessage(response, "Failed to fetch comparison"));
     }
 
     return response.json();
@@ -59,7 +70,7 @@ export class HttpRouteGateway implements RouteGateway {
     const response = await fetch(`${API_BASE_URL}/compliance/cb?shipId=${shipId}&year=${year}`);
 
     if (!response.ok) {
-      throw new Error("Failed to fetch compliance balance");
+      throw new Error(await getErrorMessage(response, "Failed to fetch compliance balance"));
     }
 
     return response.json();
@@ -69,7 +80,7 @@ export class HttpRouteGateway implements RouteGateway {
     const response = await fetch(`${API_BASE_URL}/banking/records?shipId=${shipId}&year=${year}`);
 
     if (!response.ok) {
-      throw new Error("Failed to fetch banking records");
+      throw new Error(await getErrorMessage(response, "Failed to fetch banking records"));
     }
 
     return response.json();
@@ -85,7 +96,7 @@ export class HttpRouteGateway implements RouteGateway {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to bank surplus");
+      throw new Error(await getErrorMessage(response, "Failed to bank surplus"));
     }
   }
 
@@ -99,7 +110,33 @@ export class HttpRouteGateway implements RouteGateway {
     });
 
     if (!response.ok) {
-      throw new Error("Failed to apply banked surplus");
+      throw new Error(await getErrorMessage(response, "Failed to apply banked surplus"));
     }
+  }
+
+  async getAdjustedComplianceBalances(year: number): Promise<AdjustedComplianceBalance[]> {
+    const response = await fetch(`${API_BASE_URL}/compliance/adjusted-cb?year=${year}`);
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response, "Failed to fetch adjusted compliance balances"));
+    }
+
+    return response.json();
+  }
+
+  async createPool(year: number, shipIds: string[]): Promise<PoolResponse> {
+    const response = await fetch(`${API_BASE_URL}/pools`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ year, shipIds }),
+    });
+
+    if (!response.ok) {
+      throw new Error(await getErrorMessage(response, "Failed to create pool"));
+    }
+
+    return response.json();
   }
 }

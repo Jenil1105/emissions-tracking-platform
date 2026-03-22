@@ -10,7 +10,7 @@ type RoutesPageProps = {
   onVesselTypeChange: (value: string) => void;
   onFuelTypeChange: (value: string) => void;
   onYearChange: (value: string) => void;
-  onSetBaseline: (id: number) => void;
+  onSetBaseline: (routeId: string) => void;
 };
 
 function RoutesPage({
@@ -89,7 +89,7 @@ function RoutesPage({
                   {route.isBaseline ? (
                     "Current Baseline"
                   ) : (
-                    <button onClick={() => onSetBaseline(route.id)}>Set Baseline</button>
+                    <button onClick={() => onSetBaseline(route.routeId)}>Set Baseline</button>
                   )}
                 </td>
               </tr>

@@ -7,22 +7,23 @@ export class GetComplianceBalance {
   constructor(private readonly routeRepository: RouteRepository) {}
 
   execute(shipId: string, year: number) {
-    const route = this.routeRepository.findByShipAndYear(shipId, year);
+    const route = this.routeRepository.getByShipIdAndYear(shipId, year);
 
     if (!route) {
       return undefined;
     }
 
     const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
-    const complianceBalance =
-      (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+    const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
 
     return {
-      shipId: route.shipId,
-      year: route.year,
+      shipId,
+      routeId: route.routeId,
+      year,
       ghgIntensity: route.ghgIntensity,
       energyInScope,
-      complianceBalance,
+      complianceBalance: cbBefore,
+      cbBefore,
     };
   }
 }

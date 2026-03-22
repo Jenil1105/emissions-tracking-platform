@@ -11,34 +11,43 @@ export class BankSurplus {
   ) {}
 
   execute(shipId: string, year: number, amount?: number) {
-    const route = this.routeRepository.findByShipAndYear(shipId, year);
+    const route = this.routeRepository.getByShipIdAndYear(shipId, year);
 
     if (!route) {
-      return { error: "Route not found" };
+      return { error: "Ship route not found for year" };
     }
 
     const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
-    const complianceBalance =
-      (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+    const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+    const existingRecords = this.bankingRepository.getRecords(shipId, year);
+    const banked = existingRecords
+      .filter((record) => record.type === "BANK")
+      .reduce((sum, record) => sum + record.amount, 0);
+    const applied = existingRecords
+      .filter((record) => record.type === "APPLY")
+      .reduce((sum, record) => sum + record.amount, 0);
+    const cbAfter = cbBefore - banked + applied;
 
-    if (complianceBalance <= 0) {
+    if (cbAfter <= 0) {
       return { error: "Only positive compliance balance can be banked" };
     }
 
-    const bankAmount = amount ?? complianceBalance;
+    const bankAmount = amount ?? cbAfter;
 
-    if (bankAmount <= 0 || bankAmount > complianceBalance) {
+    if (bankAmount <= 0 || bankAmount > cbAfter) {
       return { error: "Invalid bank amount" };
     }
 
     const record = this.bankingRepository.create(shipId, year, bankAmount, "BANK");
-    const totalBanked = this.bankingRepository
-      .getRecords(shipId, year)
-      .reduce((sum, entry) => sum + (entry.type === "BANK" ? entry.amount : -entry.amount), 0);
+    const totalBanked = banked + bankAmount - applied;
 
     return {
+      shipId,
+      year,
       record,
-      complianceBalance,
+      cbBefore,
+      applied,
+      cbAfter: cbAfter - bankAmount,
       totalBanked,
     };
   }

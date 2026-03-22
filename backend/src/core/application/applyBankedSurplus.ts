@@ -5,9 +5,13 @@ export class ApplyBankedSurplus {
 
   execute(shipId: string, year: number, amount: number) {
     const records = this.bankingRepository.getRecords(shipId, year);
-    const availableBanked = records.reduce((sum, record) => {
-      return sum + (record.type === "BANK" ? record.amount : -record.amount);
-    }, 0);
+    const banked = records
+      .filter((record) => record.type === "BANK")
+      .reduce((sum, record) => sum + record.amount, 0);
+    const appliedAlready = records
+      .filter((record) => record.type === "APPLY")
+      .reduce((sum, record) => sum + record.amount, 0);
+    const availableBanked = banked - appliedAlready;
 
     if (amount <= 0) {
       return { error: "Amount must be greater than zero" };
@@ -20,6 +24,8 @@ export class ApplyBankedSurplus {
     const record = this.bankingRepository.create(shipId, year, amount, "APPLY");
 
     return {
+      shipId,
+      year,
       record,
       applied: amount,
       remainingBanked: availableBanked - amount,
