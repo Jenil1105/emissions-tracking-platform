@@ -1,4 +1,10 @@
-import type { ComparisonResponse, Route, RouteFilters } from "../../core/domain/Route";
+import type {
+  BankingRecordsResponse,
+  ComparisonResponse,
+  ComplianceBalanceResponse,
+  Route,
+  RouteFilters,
+} from "../../core/domain/Route";
 import type { RouteGateway } from "../../core/ports/RouteGateway";
 
 const API_BASE_URL = "http://localhost:3000";
@@ -47,5 +53,53 @@ export class HttpRouteGateway implements RouteGateway {
     }
 
     return response.json();
+  }
+
+  async getComplianceBalance(shipId: string, year: number): Promise<ComplianceBalanceResponse> {
+    const response = await fetch(`${API_BASE_URL}/compliance/cb?shipId=${shipId}&year=${year}`);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch compliance balance");
+    }
+
+    return response.json();
+  }
+
+  async getBankingRecords(shipId: string, year: number): Promise<BankingRecordsResponse> {
+    const response = await fetch(`${API_BASE_URL}/banking/records?shipId=${shipId}&year=${year}`);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch banking records");
+    }
+
+    return response.json();
+  }
+
+  async bankSurplus(shipId: string, year: number, amount?: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/banking/bank`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ shipId, year, amount }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to bank surplus");
+    }
+  }
+
+  async applyBanked(shipId: string, year: number, amount: number): Promise<void> {
+    const response = await fetch(`${API_BASE_URL}/banking/apply`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ shipId, year, amount }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to apply banked surplus");
+    }
   }
 }

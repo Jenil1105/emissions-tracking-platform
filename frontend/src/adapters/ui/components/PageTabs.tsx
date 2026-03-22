@@ -1,6 +1,6 @@
 type PageTabsProps = {
-  activePage: "routes" | "compare";
-  onPageChange: (page: "routes" | "compare") => void;
+  activePage: "routes" | "compare" | "banking";
+  onPageChange: (page: "routes" | "compare" | "banking") => void;
 };
 
 function PageTabs({ activePage, onPageChange }: PageTabsProps) {
@@ -11,6 +11,9 @@ function PageTabs({ activePage, onPageChange }: PageTabsProps) {
       </button>
       <button disabled={activePage === "compare"} onClick={() => onPageChange("compare")}>
         Compare
+      </button>
+      <button disabled={activePage === "banking"} onClick={() => onPageChange("banking")}>
+        Banking
       </button>
     </div>
   );

@@ -10,4 +10,5 @@ export interface RouteRepository {
   getAll(filters?: RouteFilters): Route[];
   setBaseline(id: number): Route | undefined;
   getBaseline(): Route | undefined;
+  findByShipAndYear(shipId: string, year: number): Route | undefined;
 }

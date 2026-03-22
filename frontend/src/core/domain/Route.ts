@@ -27,3 +27,24 @@ export type ComparisonResponse = {
   baseline: Route;
   comparisonRoutes: ComparisonRoute[];
 };
+
+export type BankingRecord = {
+  id: number;
+  shipId: string;
+  year: number;
+  amount: number;
+  type: "BANK" | "APPLY";
+};
+
+export type BankingRecordsResponse = {
+  records: BankingRecord[];
+  totalBanked: number;
+};
+
+export type ComplianceBalanceResponse = {
+  shipId: string;
+  year: number;
+  ghgIntensity: number;
+  energyInScope: number;
+  complianceBalance: number;
+};

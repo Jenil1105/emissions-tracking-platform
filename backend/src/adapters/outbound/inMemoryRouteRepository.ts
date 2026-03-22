@@ -39,4 +39,8 @@ export class InMemoryRouteRepository implements RouteRepository {
   getBaseline(): Route | undefined {
     return routes.find((route) => route.isBaseline);
   }
+
+  findByShipAndYear(shipId: string, year: number): Route | undefined {
+    return routes.find((route) => route.shipId === shipId && route.year === year);
+  }
 }
