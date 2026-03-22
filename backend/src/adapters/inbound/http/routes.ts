@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { GetRoutes } from "../../../core/application/getRoutes";
+import { GetRouteComparison } from "../../../core/application/getRouteComparison";
 import { SetBaselineRoute } from "../../../core/application/setBaselineRoute";
 import { InMemoryRouteRepository } from "../../outbound/inMemoryRouteRepository";
 
@@ -8,6 +9,7 @@ const routesRouter = Router();
 const routeRepository = new InMemoryRouteRepository();
 const getRoutes = new GetRoutes(routeRepository);
 const setBaselineRoute = new SetBaselineRoute(routeRepository);
+const getRouteComparison = new GetRouteComparison(routeRepository);
 
 routesRouter.get("/routes", (req, res) => {
   const filters = {
@@ -30,6 +32,17 @@ routesRouter.post("/routes/:id/baseline", (req, res) => {
   }
 
   res.json(updatedRoute);
+});
+
+routesRouter.get("/routes/comparison", (_req, res) => {
+  const result = getRouteComparison.execute();
+
+  if (!result) {
+    res.status(404).json({ message: "Baseline route not found" });
+    return;
+  }
+
+  res.json(result);
 });
 
 export default routesRouter;

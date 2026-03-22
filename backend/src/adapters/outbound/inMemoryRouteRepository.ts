@@ -35,4 +35,8 @@ export class InMemoryRouteRepository implements RouteRepository {
 
     return selectedRoute;
   }
+
+  getBaseline(): Route | undefined {
+    return routes.find((route) => route.isBaseline);
+  }
 }

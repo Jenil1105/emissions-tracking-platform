@@ -9,4 +9,5 @@ export type RouteFilters = {
 export interface RouteRepository {
   getAll(filters?: RouteFilters): Route[];
   setBaseline(id: number): Route | undefined;
+  getBaseline(): Route | undefined;
 }
