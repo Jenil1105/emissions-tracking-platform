@@ -21,15 +21,13 @@ function mapBankEntry(row: BankEntryRow): BankEntry {
 export class PostgresBankingRepository implements BankingRepository {
   constructor(private readonly db: Pool) {}
 
-  async getRecords(year: number): Promise<BankEntry[]> {
+  async getRecords(): Promise<BankEntry[]> {
     const result = await this.db.query<BankEntryRow>(
       `
         SELECT id, year, amount, type
         FROM bank_entries
-        WHERE year = $1
         ORDER BY id ASC
-      `,
-      [year]
+      `
     );
 
     return result.rows.map(mapBankEntry);

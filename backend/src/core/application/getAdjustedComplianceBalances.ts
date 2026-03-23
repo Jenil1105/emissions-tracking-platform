@@ -12,7 +12,7 @@ export class GetAdjustedComplianceBalances {
 
   async execute(year: number) {
     const routes = await this.routeRepository.getByYear(year);
-    const records = await this.bankingRepository.getRecords(year);
+    const records = await this.bankingRepository.getRecords();
     const banked = records
       .filter((record) => record.type === "BANK")
       .reduce((sum, record) => sum + record.amount, 0);

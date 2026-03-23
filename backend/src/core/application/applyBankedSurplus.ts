@@ -4,7 +4,7 @@ export class ApplyBankedSurplus {
   constructor(private readonly bankingRepository: BankingRepository) {}
 
   async execute(year: number, amount: number) {
-    const records = await this.bankingRepository.getRecords(year);
+    const records = await this.bankingRepository.getRecords();
     const banked = records
       .filter((record) => record.type === "BANK")
       .reduce((sum, record) => sum + record.amount, 0);

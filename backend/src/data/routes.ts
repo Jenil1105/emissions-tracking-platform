@@ -58,5 +58,41 @@ export const routes = [
     distance: 11900,
     totalEmissions: 4400,
     isBaseline: false
+  },
+  {
+    id: 6,
+    routeId: "R006",
+    vesselType: "Container",
+    fuelType: "LNG",
+    year: 2025,
+    ghgIntensity: 90.5,
+    fuelConsumption: 495,
+    distance: 11900,
+    totalEmissions: 440,
+    isBaseline: false
+  },
+  {
+    id: 7,
+    routeId: "R007",
+    vesselType: "Container",
+    fuelType: "LNG",
+    year: 2025,
+    ghgIntensity: 90.5,
+    fuelConsumption: 495,
+    distance: 11900,
+    totalEmissions: 440,
+    isBaseline: false
+  },
+  {
+    id: 8,
+    routeId: "R008",
+    vesselType: "Container",
+    fuelType: "LNG",
+    year: 2025,
+    ghgIntensity: 90.5,
+    fuelConsumption: 495,
+    distance: 11900,
+    totalEmissions: 440,
+    isBaseline: false
   }
 ];

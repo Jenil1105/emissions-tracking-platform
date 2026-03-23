@@ -81,13 +81,7 @@ routesRouter.get("/compliance/cb", async (req, res) => {
 });
 
 routesRouter.get("/banking/records", async (req, res) => {
-  const year = Number(req.query.year);
-
-  if (Number.isNaN(year)) {
-    res.status(400).json({ message: "year is required" });
-    return;
-  }
-
+  const year = req.query.year ? Number(req.query.year) : undefined;
   const result = await getBankingRecords.execute(year);
   res.json(result);
 });
