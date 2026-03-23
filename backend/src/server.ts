@@ -9,7 +9,7 @@ import { PostgresPoolRepository } from "./adapters/outbound/postgresPoolReposito
 import { PostgresRouteRepository } from "./adapters/outbound/postgresRouteRepository";
 import { PostgresShipComplianceRepository } from "./adapters/outbound/postgresShipComplianceRepository";
 
-const port = 3000;
+const port = process.env.PORT || 3000;
 
 export function createApp() {
   const app = express();
