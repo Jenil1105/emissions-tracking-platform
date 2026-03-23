@@ -1,5 +1,7 @@
 import type { PoolRepository } from "../ports/poolRepository";
 import type { RouteRepository } from "../ports/routeRepository";
+import type { BankingRepository } from "../ports/bankingRepository";
+import { distributeBankingToRoutes } from "./distributeBankingToRoutes";
 
 const TARGET_GHG_INTENSITY = 89.3368;
 const ENERGY_FACTOR = 41000;
@@ -7,7 +9,8 @@ const ENERGY_FACTOR = 41000;
 export class CreatePool {
   constructor(
     private readonly routeRepository: RouteRepository,
-    private readonly poolRepository: PoolRepository
+    private readonly poolRepository: PoolRepository,
+    private readonly bankingRepository: BankingRepository
   ) {}
 
   async execute(year: number, routeIds: string[]) {
@@ -18,14 +21,26 @@ export class CreatePool {
       return { error: "Some routes were not found for the selected year" };
     }
 
-    const members = routes.map((route) => {
+    const baseBalances = routes.map((route) => {
       const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
-      const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
-
       return {
         routeId: route.routeId,
-        cbBefore,
-        cbAfter: cbBefore,
+        year: route.year,
+        cbBefore: (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope,
+      };
+    });
+
+    const records = await this.bankingRepository.getRecords();
+    const appliedForYear = records
+      .filter((record) => record.type === "APPLY" && record.year === year)
+      .reduce((sum, record) => sum + record.amount, 0);
+    const balancesAfterBanking = distributeBankingToRoutes(baseBalances, appliedForYear);
+
+    const members = balancesAfterBanking.map((balance) => {
+      return {
+        routeId: balance.routeId,
+        cbBefore: balance.cbAfterBanking,
+        cbAfter: balance.cbAfterBanking,
       };
     });
 

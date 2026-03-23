@@ -204,6 +204,8 @@ function App() {
     }
   };
 
+  const selectedPoolingMembers = adjustedBalances.filter((balance) => selectedRouteIds.includes(balance.routeId));
+
   useEffect(() => {
     void fetchRoutes();
   }, [vesselType, fuelType, year]);
@@ -287,6 +289,7 @@ function App() {
             onYearChange={setSelectedPoolingYear}
             poolResult={poolResult}
             routes={allRoutes}
+            selectedMembers={selectedPoolingMembers}
             selectedRouteIds={selectedRouteIds}
             selectedYear={selectedPoolingYear}
           />

@@ -56,9 +56,8 @@ export type AdjustedComplianceBalance = {
   routeId: string;
   year: number;
   cbBefore: number;
-  banked: number;
-  applied: number;
-  adjustedCb: number;
+  bankingAdjustment: number;
+  cbAfterBanking: number;
 };
 
 export type PoolMember = {

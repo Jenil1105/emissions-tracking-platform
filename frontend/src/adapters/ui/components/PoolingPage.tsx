@@ -4,6 +4,7 @@ type PoolingPageProps = {
   routes: Route[];
   selectedYear: string;
   adjustedBalances: AdjustedComplianceBalance[];
+  selectedMembers: AdjustedComplianceBalance[];
   selectedRouteIds: string[];
   poolResult: PoolResponse | null;
   loading: boolean;
@@ -19,6 +20,7 @@ function PoolingPage({
   routes,
   selectedYear,
   adjustedBalances,
+  selectedMembers,
   selectedRouteIds,
   poolResult,
   loading,
@@ -28,8 +30,7 @@ function PoolingPage({
   onCreatePool,
 }: PoolingPageProps) {
   const yearOptions = Array.from(new Set(routes.map((route) => String(route.year))));
-  const selectedMembers = adjustedBalances.filter((balance) => selectedRouteIds.includes(balance.routeId));
-  const poolSum = selectedMembers.reduce((sum, member) => sum + member.adjustedCb, 0);
+  const poolSum = selectedMembers.reduce((sum, member) => sum + member.cbAfterBanking, 0);
   const isPoolValid = selectedMembers.length > 0 && poolSum >= 0;
 
   return (
@@ -91,9 +92,9 @@ function PoolingPage({
                     <div className="flex-1">
                       <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                         <span className="font-semibold text-slate-900">{balance.routeId}</span>
-                        <span className="text-sm text-slate-600">Adjusted {balance.adjustedCb.toFixed(2)}</span>
+                        <span className="text-sm text-slate-600">After banking {balance.cbAfterBanking.toFixed(2)}</span>
                       </div>
-                      <p className="mt-2 text-sm text-slate-600">CB Before {balance.cbBefore.toFixed(2)} | Banked {balance.banked.toFixed(2)} | Applied {balance.applied.toFixed(2)}</p>
+                      <p className="mt-2 text-sm text-slate-600">CB Before {balance.cbBefore.toFixed(2)} | Banking support {balance.bankingAdjustment.toFixed(2)}</p>
                     </div>
                   </label>
                 );
