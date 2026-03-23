@@ -9,7 +9,7 @@ import type {
 } from "../../core/domain/Route";
 import type { RouteGateway } from "../../core/ports/RouteGateway";
 
-const API_BASE_URL = "http://localhost:3000";
+const API_BASE_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3000";
 
 async function getErrorMessage(response: Response, fallbackMessage: string) {
   try {
