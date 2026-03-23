@@ -1,5 +1,4 @@
 export type PoolMember = {
-  shipId: string;
   routeId: string;
   cbBefore: number;
   cbAfter: number;

@@ -7,9 +7,8 @@ export type RouteFilters = {
 };
 
 export interface RouteRepository {
-  getAll(filters?: RouteFilters): Route[];
-  setBaseline(routeId: string): Route | undefined;
-  getBaseline(): Route | undefined;
-  getByYear(year: number): Route[];
-  getByShipIdAndYear(shipId: string, year: number): Route | undefined;
+  getAll(filters?: RouteFilters): Promise<Route[]>;
+  setBaseline(routeId: string): Promise<Route | undefined>;
+  getBaseline(): Promise<Route | undefined>;
+  getByYear(year: number): Promise<Route[]>;
 }

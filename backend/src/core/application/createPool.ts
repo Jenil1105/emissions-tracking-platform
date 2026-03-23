@@ -10,13 +10,12 @@ export class CreatePool {
     private readonly poolRepository: PoolRepository
   ) {}
 
-  execute(year: number, shipIds: string[]) {
-    const routes = this.routeRepository
-      .getByYear(year)
-      .filter((route) => shipIds.includes(route.shipId));
+  async execute(year: number, routeIds: string[]) {
+    const routes = (await this.routeRepository.getByYear(year))
+      .filter((route) => routeIds.includes(route.routeId));
 
-    if (routes.length !== shipIds.length) {
-      return { error: "Some ships were not found for the selected year" };
+    if (routes.length !== routeIds.length) {
+      return { error: "Some routes were not found for the selected year" };
     }
 
     const members = routes.map((route) => {
@@ -24,7 +23,6 @@ export class CreatePool {
       const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
 
       return {
-        shipId: route.shipId,
         routeId: route.routeId,
         cbBefore,
         cbAfter: cbBefore,
@@ -66,15 +64,14 @@ export class CreatePool {
 
     const invalidDeficit = members.some((member) => member.cbBefore < 0 && member.cbAfter < member.cbBefore);
     if (invalidDeficit) {
-      return { error: "Deficit ship cannot exit worse after pooling" };
+      return { error: "Deficit route cannot exit worse after pooling" };
     }
 
     const invalidSurplus = members.some((member) => member.cbBefore > 0 && member.cbAfter < 0);
     if (invalidSurplus) {
-      return { error: "Surplus ship cannot exit negative after pooling" };
+      return { error: "Surplus route cannot exit negative after pooling" };
     }
 
-    const pool = this.poolRepository.create(year, members);
-    return pool;
+    return this.poolRepository.create(year, members);
   }
 }

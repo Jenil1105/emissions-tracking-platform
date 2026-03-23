@@ -66,8 +66,8 @@ export class HttpRouteGateway implements RouteGateway {
     return response.json();
   }
 
-  async getComplianceBalance(shipId: string, year: number): Promise<ComplianceBalanceResponse> {
-    const response = await fetch(`${API_BASE_URL}/compliance/cb?shipId=${shipId}&year=${year}`);
+  async getComplianceBalance(year: number): Promise<ComplianceBalanceResponse> {
+    const response = await fetch(`${API_BASE_URL}/compliance/cb?year=${year}`);
 
     if (!response.ok) {
       throw new Error(await getErrorMessage(response, "Failed to fetch compliance balance"));
@@ -76,8 +76,8 @@ export class HttpRouteGateway implements RouteGateway {
     return response.json();
   }
 
-  async getBankingRecords(shipId: string, year: number): Promise<BankingRecordsResponse> {
-    const response = await fetch(`${API_BASE_URL}/banking/records?shipId=${shipId}&year=${year}`);
+  async getBankingRecords(year: number): Promise<BankingRecordsResponse> {
+    const response = await fetch(`${API_BASE_URL}/banking/records?year=${year}`);
 
     if (!response.ok) {
       throw new Error(await getErrorMessage(response, "Failed to fetch banking records"));
@@ -86,13 +86,13 @@ export class HttpRouteGateway implements RouteGateway {
     return response.json();
   }
 
-  async bankSurplus(shipId: string, year: number, amount?: number): Promise<void> {
+  async bankSurplus(year: number, amount?: number): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/banking/bank`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ shipId, year, amount }),
+      body: JSON.stringify({ year, amount }),
     });
 
     if (!response.ok) {
@@ -100,13 +100,13 @@ export class HttpRouteGateway implements RouteGateway {
     }
   }
 
-  async applyBanked(shipId: string, year: number, amount: number): Promise<void> {
+  async applyBanked(year: number, amount: number): Promise<void> {
     const response = await fetch(`${API_BASE_URL}/banking/apply`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ shipId, year, amount }),
+      body: JSON.stringify({ year, amount }),
     });
 
     if (!response.ok) {
@@ -124,13 +124,13 @@ export class HttpRouteGateway implements RouteGateway {
     return response.json();
   }
 
-  async createPool(year: number, shipIds: string[]): Promise<PoolResponse> {
+  async createPool(year: number, routeIds: string[]): Promise<PoolResponse> {
     const response = await fetch(`${API_BASE_URL}/pools`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ year, shipIds }),
+      body: JSON.stringify({ year, routeIds }),
     });
 
     if (!response.ok) {

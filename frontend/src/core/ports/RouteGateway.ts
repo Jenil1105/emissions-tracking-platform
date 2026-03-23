@@ -12,10 +12,10 @@ export interface RouteGateway {
   getRoutes(filters?: RouteFilters): Promise<Route[]>;
   setBaseline(routeId: string): Promise<void>;
   getComparison(): Promise<ComparisonResponse>;
-  getComplianceBalance(shipId: string, year: number): Promise<ComplianceBalanceResponse>;
-  getBankingRecords(shipId: string, year: number): Promise<BankingRecordsResponse>;
-  bankSurplus(shipId: string, year: number, amount?: number): Promise<void>;
-  applyBanked(shipId: string, year: number, amount: number): Promise<void>;
+  getComplianceBalance(year: number): Promise<ComplianceBalanceResponse>;
+  getBankingRecords(year: number): Promise<BankingRecordsResponse>;
+  bankSurplus(year: number, amount?: number): Promise<void>;
+  applyBanked(year: number, amount: number): Promise<void>;
   getAdjustedComplianceBalances(year: number): Promise<AdjustedComplianceBalance[]>;
-  createPool(year: number, shipIds: string[]): Promise<PoolResponse>;
+  createPool(year: number, routeIds: string[]): Promise<PoolResponse>;
 }

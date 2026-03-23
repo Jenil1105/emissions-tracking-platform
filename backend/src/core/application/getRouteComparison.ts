@@ -5,14 +5,14 @@ const TARGET_GHG_INTENSITY = 89.3368;
 export class GetRouteComparison {
   constructor(private readonly routeRepository: RouteRepository) {}
 
-  execute() {
-    const baseline = this.routeRepository.getBaseline();
+  async execute() {
+    const baseline = await this.routeRepository.getBaseline();
 
     if (!baseline) {
       return undefined;
     }
 
-    const allRoutes = this.routeRepository.getAll();
+    const allRoutes = await this.routeRepository.getAll();
 
     const comparisonRoutes = allRoutes
       .filter((route) => route.id !== baseline.id)

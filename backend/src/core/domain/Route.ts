@@ -1,7 +1,6 @@
 export type Route = {
   id: number;
   routeId: string;
-  shipId: string;
   vesselType: string;
   fuelType: string;
   year: number;

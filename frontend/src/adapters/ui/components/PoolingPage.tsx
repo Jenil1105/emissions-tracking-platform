@@ -4,12 +4,12 @@ type PoolingPageProps = {
   routes: Route[];
   selectedYear: string;
   adjustedBalances: AdjustedComplianceBalance[];
-  selectedShipIds: string[];
+  selectedRouteIds: string[];
   poolResult: PoolResponse | null;
   loading: boolean;
   error: string;
   onYearChange: (year: string) => void;
-  onShipToggle: (shipId: string) => void;
+  onRouteToggle: (routeId: string) => void;
   onCreatePool: () => void;
 };
 
@@ -17,16 +17,16 @@ function PoolingPage({
   routes,
   selectedYear,
   adjustedBalances,
-  selectedShipIds,
+  selectedRouteIds,
   poolResult,
   loading,
   error,
   onYearChange,
-  onShipToggle,
+  onRouteToggle,
   onCreatePool,
 }: PoolingPageProps) {
   const yearOptions = Array.from(new Set(routes.map((route) => String(route.year))));
-  const selectedMembers = adjustedBalances.filter((balance) => selectedShipIds.includes(balance.shipId));
+  const selectedMembers = adjustedBalances.filter((balance) => selectedRouteIds.includes(balance.routeId));
   const poolSum = selectedMembers.reduce((sum, member) => sum + member.adjustedCb, 0);
   const isPoolValid = selectedMembers.length > 0 && poolSum >= 0;
 
@@ -52,14 +52,13 @@ function PoolingPage({
         <>
           <div style={{ marginBottom: "20px" }}>
             {adjustedBalances.map((balance) => (
-              <label key={balance.shipId} style={{ display: "block", marginBottom: "8px" }}>
+              <label key={balance.routeId} style={{ display: "block", marginBottom: "8px" }}>
                 <input
-                  checked={selectedShipIds.includes(balance.shipId)}
-                  onChange={() => onShipToggle(balance.shipId)}
+                  checked={selectedRouteIds.includes(balance.routeId)}
+                  onChange={() => onRouteToggle(balance.routeId)}
                   type="checkbox"
                 />{" "}
-                {balance.shipId} ({balance.routeId}) - CB Before: {balance.cbBefore.toFixed(2)} - Adjusted CB:{" "}
-                {balance.adjustedCb.toFixed(2)}
+                {balance.routeId} - CB Before: {balance.cbBefore.toFixed(2)} - Adjusted CB: {balance.adjustedCb.toFixed(2)}
               </label>
             ))}
           </div>
@@ -78,7 +77,6 @@ function PoolingPage({
           <table border={1} cellPadding={10} style={{ borderCollapse: "collapse", width: "100%" }}>
             <thead>
               <tr>
-                <th>Ship ID</th>
                 <th>Route ID</th>
                 <th>CB Before</th>
                 <th>CB After</th>
@@ -86,8 +84,7 @@ function PoolingPage({
             </thead>
             <tbody>
               {poolResult.members.map((member) => (
-                <tr key={member.shipId}>
-                  <td>{member.shipId}</td>
+                <tr key={member.routeId}>
                   <td>{member.routeId}</td>
                   <td>{member.cbBefore.toFixed(2)}</td>
                   <td>{member.cbAfter.toFixed(2)}</td>

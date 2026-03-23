@@ -2,7 +2,6 @@ export const routes = [
   {
     id: 1,
     routeId: "R001",
-    shipId: "SHIP-001",
     vesselType: "Container",
     fuelType: "HFO",
     year: 2024,
@@ -15,7 +14,6 @@ export const routes = [
   {
     id: 2,
     routeId: "R002",
-    shipId: "SHIP-002",
     vesselType: "BulkCarrier",
     fuelType: "LNG",
     year: 2024,
@@ -28,7 +26,6 @@ export const routes = [
   {
     id: 3,
     routeId: "R003",
-    shipId: "SHIP-003",
     vesselType: "Tanker",
     fuelType: "MGO",
     year: 2024,
@@ -41,7 +38,6 @@ export const routes = [
   {
     id: 4,
     routeId: "R004",
-    shipId: "SHIP-004",
     vesselType: "RoRo",
     fuelType: "HFO",
     year: 2025,
@@ -54,7 +50,6 @@ export const routes = [
   {
     id: 5,
     routeId: "R005",
-    shipId: "SHIP-005",
     vesselType: "Container",
     fuelType: "LNG",
     year: 2025,

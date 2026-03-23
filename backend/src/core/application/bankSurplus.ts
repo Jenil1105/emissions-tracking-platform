@@ -10,16 +10,18 @@ export class BankSurplus {
     private readonly bankingRepository: BankingRepository
   ) {}
 
-  execute(shipId: string, year: number, amount?: number) {
-    const route = this.routeRepository.getByShipIdAndYear(shipId, year);
+  async execute(year: number, amount?: number) {
+    const routes = await this.routeRepository.getByYear(year);
 
-    if (!route) {
-      return { error: "Ship route not found for year" };
+    if (routes.length === 0) {
+      return { error: "No routes found for the selected year" };
     }
 
-    const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
-    const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
-    const existingRecords = this.bankingRepository.getRecords(shipId, year);
+    const cbBefore = routes.reduce((sum, route) => {
+      const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
+      return sum + (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+    }, 0);
+    const existingRecords = await this.bankingRepository.getRecords(year);
     const banked = existingRecords
       .filter((record) => record.type === "BANK")
       .reduce((sum, record) => sum + record.amount, 0);
@@ -38,11 +40,10 @@ export class BankSurplus {
       return { error: "Invalid bank amount" };
     }
 
-    const record = this.bankingRepository.create(shipId, year, bankAmount, "BANK");
+    const record = await this.bankingRepository.create(year, bankAmount, "BANK");
     const totalBanked = banked + bankAmount - applied;
 
     return {
-      shipId,
       year,
       record,
       cbBefore,

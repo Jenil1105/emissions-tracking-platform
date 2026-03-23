@@ -60,7 +60,6 @@ function RoutesPage({
           <thead>
             <tr>
               <th>Route ID</th>
-              <th>Ship ID</th>
               <th>Vessel Type</th>
               <th>Fuel Type</th>
               <th>Year</th>
@@ -76,7 +75,6 @@ function RoutesPage({
             {routes.map((route) => (
               <tr key={route.id}>
                 <td>{route.routeId}</td>
-                <td>{route.shipId}</td>
                 <td>{route.vesselType}</td>
                 <td>{route.fuelType}</td>
                 <td>{route.year}</td>

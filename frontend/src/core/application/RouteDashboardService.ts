@@ -28,27 +28,27 @@ export class RouteDashboardService {
     return this.routeGateway.getComparison();
   }
 
-  getComplianceBalance(shipId: string, year: number): Promise<ComplianceBalanceResponse> {
-    return this.routeGateway.getComplianceBalance(shipId, year);
+  getComplianceBalance(year: number): Promise<ComplianceBalanceResponse> {
+    return this.routeGateway.getComplianceBalance(year);
   }
 
-  getBankingRecords(shipId: string, year: number): Promise<BankingRecordsResponse> {
-    return this.routeGateway.getBankingRecords(shipId, year);
+  getBankingRecords(year: number): Promise<BankingRecordsResponse> {
+    return this.routeGateway.getBankingRecords(year);
   }
 
-  bankSurplus(shipId: string, year: number, amount?: number): Promise<void> {
-    return this.routeGateway.bankSurplus(shipId, year, amount);
+  bankSurplus(year: number, amount?: number): Promise<void> {
+    return this.routeGateway.bankSurplus(year, amount);
   }
 
-  applyBanked(shipId: string, year: number, amount: number): Promise<void> {
-    return this.routeGateway.applyBanked(shipId, year, amount);
+  applyBanked(year: number, amount: number): Promise<void> {
+    return this.routeGateway.applyBanked(year, amount);
   }
 
   getAdjustedComplianceBalances(year: number): Promise<AdjustedComplianceBalance[]> {
     return this.routeGateway.getAdjustedComplianceBalances(year);
   }
 
-  createPool(year: number, shipIds: string[]): Promise<PoolResponse> {
-    return this.routeGateway.createPool(year, shipIds);
+  createPool(year: number, routeIds: string[]): Promise<PoolResponse> {
+    return this.routeGateway.createPool(year, routeIds);
   }
 }
