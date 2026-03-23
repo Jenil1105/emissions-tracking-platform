@@ -4,7 +4,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx src/server.ts",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "author": "Jenil",
   "license": "ISC",
@@ -28,3 +28,4 @@
     "vitest": "^4.1.0"
   }
 }
+

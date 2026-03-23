@@ -8,29 +8,36 @@ import { GetComplianceBalance } from "../../../core/application/getComplianceBal
 import { GetRoutes } from "../../../core/application/getRoutes";
 import { GetRouteComparison } from "../../../core/application/getRouteComparison";
 import { SetBaselineRoute } from "../../../core/application/setBaselineRoute";
-import { db } from "../../../infrastructure/db";
-import { PostgresBankingRepository } from "../../outbound/postgresBankingRepository";
-import { PostgresPoolRepository } from "../../outbound/postgresPoolRepository";
-import { PostgresRouteRepository } from "../../outbound/postgresRouteRepository";
-import { PostgresShipComplianceRepository } from "../../outbound/postgresShipComplianceRepository";
+import type { BankingRepository } from "../../../core/ports/bankingRepository";
+import type { PoolRepository } from "../../../core/ports/poolRepository";
+import type { RouteRepository } from "../../../core/ports/routeRepository";
+import type { ShipComplianceRepository } from "../../../core/ports/shipComplianceRepository";
 
-const routesRouter = Router();
+type RouterDependencies = {
+  bankingRepository: BankingRepository;
+  poolRepository: PoolRepository;
+  routeRepository: RouteRepository;
+  shipComplianceRepository: ShipComplianceRepository;
+};
 
-const bankingRepository = new PostgresBankingRepository(db);
-const poolRepository = new PostgresPoolRepository(db);
-const routeRepository = new PostgresRouteRepository(db);
-const shipComplianceRepository = new PostgresShipComplianceRepository(db);
-const applyBankedSurplus = new ApplyBankedSurplus(bankingRepository);
-const bankSurplus = new BankSurplus(routeRepository, bankingRepository);
-const createPool = new CreatePool(routeRepository, poolRepository, bankingRepository);
-const getAdjustedComplianceBalances = new GetAdjustedComplianceBalances(routeRepository, bankingRepository);
-const getBankingRecords = new GetBankingRecords(bankingRepository);
-const getComplianceBalance = new GetComplianceBalance(routeRepository, shipComplianceRepository);
-const getRoutes = new GetRoutes(routeRepository);
-const setBaselineRoute = new SetBaselineRoute(routeRepository);
-const getRouteComparison = new GetRouteComparison(routeRepository);
+export function createRoutesRouter({
+  bankingRepository,
+  poolRepository,
+  routeRepository,
+  shipComplianceRepository,
+}: RouterDependencies) {
+  const routesRouter = Router();
+  const applyBankedSurplus = new ApplyBankedSurplus(bankingRepository);
+  const bankSurplus = new BankSurplus(routeRepository, bankingRepository);
+  const createPool = new CreatePool(routeRepository, poolRepository, bankingRepository);
+  const getAdjustedComplianceBalances = new GetAdjustedComplianceBalances(routeRepository, bankingRepository);
+  const getBankingRecords = new GetBankingRecords(bankingRepository);
+  const getComplianceBalance = new GetComplianceBalance(routeRepository, shipComplianceRepository);
+  const getRoutes = new GetRoutes(routeRepository);
+  const setBaselineRoute = new SetBaselineRoute(routeRepository);
+  const getRouteComparison = new GetRouteComparison(routeRepository);
 
-routesRouter.get("/routes", async (req, res) => {
+  routesRouter.get("/routes", async (req, res) => {
   const filters = {
     vesselType: req.query.vesselType as string | undefined,
     fuelType: req.query.fuelType as string | undefined,
@@ -39,9 +46,9 @@ routesRouter.get("/routes", async (req, res) => {
 
   const routes = await getRoutes.execute(filters);
   res.json(routes);
-});
+  });
 
-routesRouter.post("/routes/:routeId/baseline", async (req, res) => {
+  routesRouter.post("/routes/:routeId/baseline", async (req, res) => {
   const routeId = req.params.routeId;
   const updatedRoute = await setBaselineRoute.execute(routeId);
 
@@ -51,9 +58,9 @@ routesRouter.post("/routes/:routeId/baseline", async (req, res) => {
   }
 
   res.json(updatedRoute);
-});
+  });
 
-routesRouter.get("/routes/comparison", async (_req, res) => {
+  routesRouter.get("/routes/comparison", async (_req, res) => {
   const result = await getRouteComparison.execute();
 
   if (!result) {
@@ -62,9 +69,9 @@ routesRouter.get("/routes/comparison", async (_req, res) => {
   }
 
   res.json(result);
-});
+  });
 
-routesRouter.get("/compliance/cb", async (req, res) => {
+  routesRouter.get("/compliance/cb", async (req, res) => {
   const shipId = req.query.shipId as string | undefined;
   const year = Number(req.query.year);
 
@@ -81,9 +88,9 @@ routesRouter.get("/compliance/cb", async (req, res) => {
   }
 
   res.json(result);
-});
+  });
 
-routesRouter.get("/banking/records", async (req, res) => {
+  routesRouter.get("/banking/records", async (req, res) => {
   const shipId = req.query.shipId as string | undefined;
   const year = Number(req.query.year);
 
@@ -94,9 +101,9 @@ routesRouter.get("/banking/records", async (req, res) => {
 
   const result = await getBankingRecords.execute(shipId, year);
   res.json(result);
-});
+  });
 
-routesRouter.post("/banking/bank", async (req, res) => {
+  routesRouter.post("/banking/bank", async (req, res) => {
   const shipId = req.body.shipId as string | undefined;
   const year = Number(req.body.year);
   const amount = req.body.amount ? Number(req.body.amount) : undefined;
@@ -114,9 +121,9 @@ routesRouter.post("/banking/bank", async (req, res) => {
   }
 
   res.json(result);
-});
+  });
 
-routesRouter.post("/banking/apply", async (req, res) => {
+  routesRouter.post("/banking/apply", async (req, res) => {
   const shipId = req.body.shipId as string | undefined;
   const year = Number(req.body.year);
   const amount = Number(req.body.amount);
@@ -134,9 +141,9 @@ routesRouter.post("/banking/apply", async (req, res) => {
   }
 
   res.json(result);
-});
+  });
 
-routesRouter.get("/compliance/adjusted-cb", async (req, res) => {
+  routesRouter.get("/compliance/adjusted-cb", async (req, res) => {
   const shipId = req.query.shipId as string | undefined;
   const year = Number(req.query.year);
 
@@ -147,9 +154,9 @@ routesRouter.get("/compliance/adjusted-cb", async (req, res) => {
 
   const result = await getAdjustedComplianceBalances.execute(year, shipId);
   res.json(result);
-});
+  });
 
-routesRouter.post("/pools", async (req, res) => {
+  routesRouter.post("/pools", async (req, res) => {
   const year = Number(req.body.year);
   const shipIds = req.body.shipIds as string[] | undefined;
 
@@ -166,6 +173,7 @@ routesRouter.post("/pools", async (req, res) => {
   }
 
   res.json(result);
-});
+  });
 
-export default routesRouter;
+  return routesRouter;
+}
