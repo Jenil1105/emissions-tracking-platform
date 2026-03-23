@@ -236,63 +236,102 @@ function App() {
     setPoolingError("");
   }, [selectedPoolingYear]);
 
+  const baselineRoute = allRoutes.find((route) => route.isBaseline);
+  const totalYears = new Set(allRoutes.map((route) => route.year)).size;
+
+  const content = (() => {
+    switch (activePage) {
+      case "routes":
+        return (
+          <RoutesPage
+            error={error}
+            fuelType={fuelType}
+            loading={loading}
+            onFuelTypeChange={setFuelType}
+            onSetBaseline={(routeId) => void setBaseline(routeId)}
+            onVesselTypeChange={setVesselType}
+            onYearChange={setYear}
+            routes={routes}
+            vesselType={vesselType}
+            year={year}
+          />
+        );
+      case "compare":
+        return <ComparePage comparisonData={comparisonData} error={comparisonError} loading={comparisonLoading} />;
+      case "banking":
+        return (
+          <BankingPage
+            applyAmount={applyAmount}
+            bankingRecords={bankingRecords}
+            bankAmount={bankAmount}
+            complianceBalance={complianceBalance}
+            error={bankingError}
+            loading={bankingLoading}
+            onApply={() => void handleApply()}
+            onApplyAmountChange={setApplyAmount}
+            onBank={() => void handleBank()}
+            onBankAmountChange={setBankAmount}
+            onYearChange={setSelectedBankingYear}
+            routes={allRoutes}
+            selectedYear={selectedBankingYear}
+          />
+        );
+      case "pooling":
+        return (
+          <PoolingPage
+            adjustedBalances={adjustedBalances}
+            error={poolingError}
+            loading={poolingLoading}
+            onCreatePool={() => void handleCreatePool()}
+            onRouteToggle={handleRouteToggle}
+            onYearChange={setSelectedPoolingYear}
+            poolResult={poolResult}
+            routes={allRoutes}
+            selectedRouteIds={selectedRouteIds}
+            selectedYear={selectedPoolingYear}
+          />
+        );
+      default:
+        return null;
+    }
+  })();
+
   return (
-    <div style={{ padding: "24px" }}>
-      <h1>FuelEU Dashboard</h1>
+    <div className="dashboard-shell min-h-screen text-ink">
+      <div className="mx-auto w-full max-w-[1600px] px-3 py-5 sm:px-4 lg:px-5">
+        <section className="rounded-[28px] bg-white/80 p-5 shadow-panel backdrop-blur md:p-7 flex gap-20">
+          <div>
+            <p className="mb-2 inline-flex rounded-full bg-tide/10 px-3 py-1 text-xs font-semibold text-tide">Varuna Marine Assignment</p>
+            <h1 className="max-w-4xl font-display text-3xl font-bold leading-tight md:text-4xl">FuelEU compliance dashboard</h1>
+            <p className="mt-3 max-w-2xl text-sm text-slate-600 md:text-base">
+              A clean operating dashboard for route monitoring, baseline comparison, yearly compliance balance, and pool creation.
+            </p>
+          </div>
+          <div className="mt-5 flex flex-wrap gap-10">
+            <KpiCard label="Routes in view" value={String(allRoutes.length)} accent="bg-tide" />
+            <KpiCard label="Active baseline" value={baselineRoute?.routeId ?? "Not set"} accent="bg-coral" />
+            <KpiCard label="Operational years" value={String(totalYears)} accent="bg-emerald" />
+          </div>
+        </section>
 
-      <PageTabs activePage={activePage} onPageChange={setActivePage} />
+        <nav className="mt-5 flex flex-wrap justify-center gap-3 ">
+          <PageTabs activePage={activePage} onPageChange={setActivePage} />
+        </nav>
 
-      {activePage === "routes" && (
-        <RoutesPage
-          error={error}
-          fuelType={fuelType}
-          loading={loading}
-          onFuelTypeChange={setFuelType}
-          onSetBaseline={(routeId) => void setBaseline(routeId)}
-          onVesselTypeChange={setVesselType}
-          onYearChange={setYear}
-          routes={routes}
-          vesselType={vesselType}
-          year={year}
-        />
-      )}
+        {error ? <div className="mt-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div> : null}
 
-      {activePage === "compare" && (
-        <ComparePage comparisonData={comparisonData} error={comparisonError} loading={comparisonLoading} />
-      )}
+        <section className="mt-5 rounded-[28px] bg-white/85 p-5 shadow-panel backdrop-blur md:p-6">{content}</section>
+      </div>
+    </div>
+  );
+}
 
-      {activePage === "banking" && (
-        <BankingPage
-          applyAmount={applyAmount}
-          bankingRecords={bankingRecords}
-          bankAmount={bankAmount}
-          complianceBalance={complianceBalance}
-          error={bankingError}
-          loading={bankingLoading}
-          onApply={() => void handleApply()}
-          onApplyAmountChange={setApplyAmount}
-          onBank={() => void handleBank()}
-          onBankAmountChange={setBankAmount}
-          onYearChange={setSelectedBankingYear}
-          routes={allRoutes}
-          selectedYear={selectedBankingYear}
-        />
-      )}
-
-      {activePage === "pooling" && (
-        <PoolingPage
-          adjustedBalances={adjustedBalances}
-          error={poolingError}
-          loading={poolingLoading}
-          onCreatePool={() => void handleCreatePool()}
-          onRouteToggle={handleRouteToggle}
-          onYearChange={setSelectedPoolingYear}
-          poolResult={poolResult}
-          routes={allRoutes}
-          selectedRouteIds={selectedRouteIds}
-          selectedYear={selectedPoolingYear}
-        />
-      )}
+function KpiCard({ label, value, accent }: { label: string; value: string; accent: string }) {
+  return (
+    <div className="min-w-[150px] rounded-3xl border border-slate-200 bg-foam p-4 md:min-h-0 md:flex-1 md:max-w-[200px]">
+      <div className={`h-2 w-12 rounded-full ${accent}`} />
+      <p className="mt-3 text-sm text-slate-500">{label}</p>
+      <p className="mt-1 font-display text-xl font-bold leading-none md:text-2xl">{value}</p>
     </div>
   );
 }
