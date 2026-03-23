@@ -69,6 +69,7 @@ function RoutesPage({
               <thead className="bg-slate-50 text-xs uppercase tracking-[0.24em] text-slate-500">
                 <tr>
                   <th className="px-5 py-4">Route</th>
+                  <th className="px-5 py-4">Ship</th>
                   <th className="px-5 py-4">Vessel</th>
                   <th className="px-5 py-4">Fuel</th>
                   <th className="px-5 py-4">Year</th>
@@ -84,6 +85,7 @@ function RoutesPage({
                 {routes.map((route) => (
                   <tr key={route.id} className="border-t border-slate-100 hover:bg-slate-50/80">
                     <td className="px-5 py-4 font-semibold text-slate-900">{route.routeId}</td>
+                    <td className="px-5 py-4">{route.shipId}</td>
                     <td className="px-5 py-4">{route.vesselType}</td>
                     <td className="px-5 py-4">{route.fuelType}</td>
                     <td className="px-5 py-4">{route.year}</td>

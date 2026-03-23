@@ -12,18 +12,20 @@ import { db } from "../../../infrastructure/db";
 import { PostgresBankingRepository } from "../../outbound/postgresBankingRepository";
 import { PostgresPoolRepository } from "../../outbound/postgresPoolRepository";
 import { PostgresRouteRepository } from "../../outbound/postgresRouteRepository";
+import { PostgresShipComplianceRepository } from "../../outbound/postgresShipComplianceRepository";
 
 const routesRouter = Router();
 
 const bankingRepository = new PostgresBankingRepository(db);
 const poolRepository = new PostgresPoolRepository(db);
 const routeRepository = new PostgresRouteRepository(db);
+const shipComplianceRepository = new PostgresShipComplianceRepository(db);
 const applyBankedSurplus = new ApplyBankedSurplus(bankingRepository);
 const bankSurplus = new BankSurplus(routeRepository, bankingRepository);
 const createPool = new CreatePool(routeRepository, poolRepository, bankingRepository);
 const getAdjustedComplianceBalances = new GetAdjustedComplianceBalances(routeRepository, bankingRepository);
 const getBankingRecords = new GetBankingRecords(bankingRepository);
-const getComplianceBalance = new GetComplianceBalance(routeRepository);
+const getComplianceBalance = new GetComplianceBalance(routeRepository, shipComplianceRepository);
 const getRoutes = new GetRoutes(routeRepository);
 const setBaselineRoute = new SetBaselineRoute(routeRepository);
 const getRouteComparison = new GetRouteComparison(routeRepository);
@@ -63,17 +65,18 @@ routesRouter.get("/routes/comparison", async (_req, res) => {
 });
 
 routesRouter.get("/compliance/cb", async (req, res) => {
+  const shipId = req.query.shipId as string | undefined;
   const year = Number(req.query.year);
 
-  if (Number.isNaN(year)) {
-    res.status(400).json({ message: "year is required" });
+  if (!shipId || Number.isNaN(year)) {
+    res.status(400).json({ message: "shipId and year are required" });
     return;
   }
 
-  const result = await getComplianceBalance.execute(year);
+  const result = await getComplianceBalance.execute(shipId, year);
 
   if (!result) {
-    res.status(404).json({ message: "No routes found for the selected year" });
+    res.status(404).json({ message: "No route found for the selected ship and year" });
     return;
   }
 
@@ -81,21 +84,29 @@ routesRouter.get("/compliance/cb", async (req, res) => {
 });
 
 routesRouter.get("/banking/records", async (req, res) => {
-  const year = req.query.year ? Number(req.query.year) : undefined;
-  const result = await getBankingRecords.execute(year);
+  const shipId = req.query.shipId as string | undefined;
+  const year = Number(req.query.year);
+
+  if (!shipId || Number.isNaN(year)) {
+    res.status(400).json({ message: "shipId and year are required" });
+    return;
+  }
+
+  const result = await getBankingRecords.execute(shipId, year);
   res.json(result);
 });
 
 routesRouter.post("/banking/bank", async (req, res) => {
+  const shipId = req.body.shipId as string | undefined;
   const year = Number(req.body.year);
   const amount = req.body.amount ? Number(req.body.amount) : undefined;
 
-  if (Number.isNaN(year)) {
-    res.status(400).json({ error: "year is required" });
+  if (!shipId || Number.isNaN(year)) {
+    res.status(400).json({ error: "shipId and year are required" });
     return;
   }
 
-  const result = await bankSurplus.execute(year, amount);
+  const result = await bankSurplus.execute(shipId, year, amount);
 
   if ("error" in result) {
     res.status(400).json(result);
@@ -106,15 +117,16 @@ routesRouter.post("/banking/bank", async (req, res) => {
 });
 
 routesRouter.post("/banking/apply", async (req, res) => {
+  const shipId = req.body.shipId as string | undefined;
   const year = Number(req.body.year);
   const amount = Number(req.body.amount);
 
-  if (Number.isNaN(year) || Number.isNaN(amount)) {
-    res.status(400).json({ error: "year and amount are required" });
+  if (!shipId || Number.isNaN(year) || Number.isNaN(amount)) {
+    res.status(400).json({ error: "shipId, year, and amount are required" });
     return;
   }
 
-  const result = await applyBankedSurplus.execute(year, amount);
+  const result = await applyBankedSurplus.execute(shipId, year, amount);
 
   if ("error" in result) {
     res.status(400).json(result);
@@ -125,6 +137,7 @@ routesRouter.post("/banking/apply", async (req, res) => {
 });
 
 routesRouter.get("/compliance/adjusted-cb", async (req, res) => {
+  const shipId = req.query.shipId as string | undefined;
   const year = Number(req.query.year);
 
   if (Number.isNaN(year)) {
@@ -132,20 +145,20 @@ routesRouter.get("/compliance/adjusted-cb", async (req, res) => {
     return;
   }
 
-  const result = await getAdjustedComplianceBalances.execute(year);
+  const result = await getAdjustedComplianceBalances.execute(year, shipId);
   res.json(result);
 });
 
 routesRouter.post("/pools", async (req, res) => {
   const year = Number(req.body.year);
-  const routeIds = req.body.routeIds as string[] | undefined;
+  const shipIds = req.body.shipIds as string[] | undefined;
 
-  if (Number.isNaN(year) || !Array.isArray(routeIds)) {
-    res.status(400).json({ error: "year and routeIds are required" });
+  if (Number.isNaN(year) || !Array.isArray(shipIds)) {
+    res.status(400).json({ error: "year and shipIds are required" });
     return;
   }
 
-  const result = await createPool.execute(year, routeIds);
+  const result = await createPool.execute(year, shipIds);
 
   if ("error" in result) {
     res.status(400).json(result);

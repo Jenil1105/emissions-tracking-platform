@@ -24,10 +24,10 @@ export class PostgresPoolRepository implements PoolRepository {
       for (const member of members) {
         await client.query(
           `
-            INSERT INTO pool_members (pool_id, route_id, cb_before, cb_after)
-            VALUES ($1, $2, $3, $4)
+            INSERT INTO pool_members (pool_id, ship_id, route_id, cb_before, cb_after)
+            VALUES ($1, $2, $3, $4, $5)
           `,
-          [poolId, member.routeId, member.cbBefore, member.cbAfter]
+          [poolId, member.shipId, member.routeId, member.cbBefore, member.cbAfter]
         );
       }
 

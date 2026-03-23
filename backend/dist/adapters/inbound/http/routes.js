@@ -10,73 +10,76 @@ const getComplianceBalance_1 = require("../../../core/application/getComplianceB
 const getRoutes_1 = require("../../../core/application/getRoutes");
 const getRouteComparison_1 = require("../../../core/application/getRouteComparison");
 const setBaselineRoute_1 = require("../../../core/application/setBaselineRoute");
-const inMemoryBankingRepository_1 = require("../../outbound/inMemoryBankingRepository");
-const inMemoryPoolRepository_1 = require("../../outbound/inMemoryPoolRepository");
-const inMemoryRouteRepository_1 = require("../../outbound/inMemoryRouteRepository");
+const db_1 = require("../../../infrastructure/db");
+const postgresBankingRepository_1 = require("../../outbound/postgresBankingRepository");
+const postgresPoolRepository_1 = require("../../outbound/postgresPoolRepository");
+const postgresRouteRepository_1 = require("../../outbound/postgresRouteRepository");
+const postgresShipComplianceRepository_1 = require("../../outbound/postgresShipComplianceRepository");
 const routesRouter = (0, express_1.Router)();
-const bankingRepository = new inMemoryBankingRepository_1.InMemoryBankingRepository();
+const bankingRepository = new postgresBankingRepository_1.PostgresBankingRepository(db_1.db);
+const poolRepository = new postgresPoolRepository_1.PostgresPoolRepository(db_1.db);
+const routeRepository = new postgresRouteRepository_1.PostgresRouteRepository(db_1.db);
+const shipComplianceRepository = new postgresShipComplianceRepository_1.PostgresShipComplianceRepository(db_1.db);
 const applyBankedSurplus = new applyBankedSurplus_1.ApplyBankedSurplus(bankingRepository);
-const poolRepository = new inMemoryPoolRepository_1.InMemoryPoolRepository();
-const routeRepository = new inMemoryRouteRepository_1.InMemoryRouteRepository();
 const bankSurplus = new bankSurplus_1.BankSurplus(routeRepository, bankingRepository);
-const createPool = new createPool_1.CreatePool(routeRepository, poolRepository);
+const createPool = new createPool_1.CreatePool(routeRepository, poolRepository, bankingRepository);
 const getAdjustedComplianceBalances = new getAdjustedComplianceBalances_1.GetAdjustedComplianceBalances(routeRepository, bankingRepository);
 const getBankingRecords = new getBankingRecords_1.GetBankingRecords(bankingRepository);
-const getComplianceBalance = new getComplianceBalance_1.GetComplianceBalance(routeRepository);
+const getComplianceBalance = new getComplianceBalance_1.GetComplianceBalance(routeRepository, shipComplianceRepository);
 const getRoutes = new getRoutes_1.GetRoutes(routeRepository);
 const setBaselineRoute = new setBaselineRoute_1.SetBaselineRoute(routeRepository);
 const getRouteComparison = new getRouteComparison_1.GetRouteComparison(routeRepository);
-routesRouter.get("/routes", (req, res) => {
+routesRouter.get("/routes", async (req, res) => {
     const filters = {
         vesselType: req.query.vesselType,
         fuelType: req.query.fuelType,
-        year: req.query.year ? Number(req.query.year) : undefined
+        year: req.query.year ? Number(req.query.year) : undefined,
     };
-    const routes = getRoutes.execute(filters);
+    const routes = await getRoutes.execute(filters);
     res.json(routes);
 });
-routesRouter.post("/routes/:routeId/baseline", (req, res) => {
+routesRouter.post("/routes/:routeId/baseline", async (req, res) => {
     const routeId = req.params.routeId;
-    const updatedRoute = setBaselineRoute.execute(routeId);
+    const updatedRoute = await setBaselineRoute.execute(routeId);
     if (!updatedRoute) {
         res.status(404).json({ message: "Route not found" });
         return;
     }
     res.json(updatedRoute);
 });
-routesRouter.get("/routes/comparison", (_req, res) => {
-    const result = getRouteComparison.execute();
+routesRouter.get("/routes/comparison", async (_req, res) => {
+    const result = await getRouteComparison.execute();
     if (!result) {
         res.status(404).json({ message: "Baseline route not found" });
         return;
     }
     res.json(result);
 });
-routesRouter.get("/compliance/cb", (req, res) => {
+routesRouter.get("/compliance/cb", async (req, res) => {
     const shipId = req.query.shipId;
     const year = Number(req.query.year);
     if (!shipId || Number.isNaN(year)) {
         res.status(400).json({ message: "shipId and year are required" });
         return;
     }
-    const result = getComplianceBalance.execute(shipId, year);
+    const result = await getComplianceBalance.execute(shipId, year);
     if (!result) {
-        res.status(404).json({ message: "Route not found" });
+        res.status(404).json({ message: "No route found for the selected ship and year" });
         return;
     }
     res.json(result);
 });
-routesRouter.get("/banking/records", (req, res) => {
+routesRouter.get("/banking/records", async (req, res) => {
     const shipId = req.query.shipId;
     const year = Number(req.query.year);
     if (!shipId || Number.isNaN(year)) {
         res.status(400).json({ message: "shipId and year are required" });
         return;
     }
-    const result = getBankingRecords.execute(shipId, year);
+    const result = await getBankingRecords.execute(shipId, year);
     res.json(result);
 });
-routesRouter.post("/banking/bank", (req, res) => {
+routesRouter.post("/banking/bank", async (req, res) => {
     const shipId = req.body.shipId;
     const year = Number(req.body.year);
     const amount = req.body.amount ? Number(req.body.amount) : undefined;
@@ -84,14 +87,14 @@ routesRouter.post("/banking/bank", (req, res) => {
         res.status(400).json({ error: "shipId and year are required" });
         return;
     }
-    const result = bankSurplus.execute(shipId, year, amount);
+    const result = await bankSurplus.execute(shipId, year, amount);
     if ("error" in result) {
         res.status(400).json(result);
         return;
     }
     res.json(result);
 });
-routesRouter.post("/banking/apply", (req, res) => {
+routesRouter.post("/banking/apply", async (req, res) => {
     const shipId = req.body.shipId;
     const year = Number(req.body.year);
     const amount = Number(req.body.amount);
@@ -99,30 +102,31 @@ routesRouter.post("/banking/apply", (req, res) => {
         res.status(400).json({ error: "shipId, year, and amount are required" });
         return;
     }
-    const result = applyBankedSurplus.execute(shipId, year, amount);
+    const result = await applyBankedSurplus.execute(shipId, year, amount);
     if ("error" in result) {
         res.status(400).json(result);
         return;
     }
     res.json(result);
 });
-routesRouter.get("/compliance/adjusted-cb", (req, res) => {
+routesRouter.get("/compliance/adjusted-cb", async (req, res) => {
+    const shipId = req.query.shipId;
     const year = Number(req.query.year);
     if (Number.isNaN(year)) {
         res.status(400).json({ message: "year is required" });
         return;
     }
-    const result = getAdjustedComplianceBalances.execute(year);
+    const result = await getAdjustedComplianceBalances.execute(year, shipId);
     res.json(result);
 });
-routesRouter.post("/pools", (req, res) => {
+routesRouter.post("/pools", async (req, res) => {
     const year = Number(req.body.year);
     const shipIds = req.body.shipIds;
     if (Number.isNaN(year) || !Array.isArray(shipIds)) {
         res.status(400).json({ error: "year and shipIds are required" });
         return;
     }
-    const result = createPool.execute(year, shipIds);
+    const result = await createPool.execute(year, shipIds);
     if ("error" in result) {
         res.status(400).json(result);
         return;

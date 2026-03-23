@@ -5,6 +5,7 @@ import type { RouteFilters, RouteRepository } from "../../core/ports/routeReposi
 type RouteRow = {
   id: number;
   route_id: string;
+  ship_id: string;
   vessel_type: string;
   fuel_type: string;
   year: number;
@@ -19,6 +20,7 @@ function mapRoute(row: RouteRow): Route {
   return {
     id: row.id,
     routeId: row.route_id,
+    shipId: row.ship_id,
     vesselType: row.vessel_type,
     fuelType: row.fuel_type,
     year: row.year,
@@ -56,6 +58,7 @@ export class PostgresRouteRepository implements RouteRepository {
     const result = await this.db.query<RouteRow>(
       `
         SELECT id, route_id, vessel_type, fuel_type, year, ghg_intensity, fuel_consumption, distance, total_emissions, is_baseline
+        , ship_id
         FROM routes
         ${whereClause}
         ORDER BY id ASC
@@ -74,6 +77,7 @@ export class PostgresRouteRepository implements RouteRepository {
       const selected = await client.query<RouteRow>(
         `
           SELECT id, route_id, vessel_type, fuel_type, year, ghg_intensity, fuel_consumption, distance, total_emissions, is_baseline
+          , ship_id
           FROM routes
           WHERE route_id = $1
         `,
@@ -102,6 +106,7 @@ export class PostgresRouteRepository implements RouteRepository {
     const result = await this.db.query<RouteRow>(
       `
         SELECT id, route_id, vessel_type, fuel_type, year, ghg_intensity, fuel_consumption, distance, total_emissions, is_baseline
+        , ship_id
         FROM routes
         WHERE is_baseline = TRUE
         LIMIT 1
@@ -119,6 +124,7 @@ export class PostgresRouteRepository implements RouteRepository {
     const result = await this.db.query<RouteRow>(
       `
         SELECT id, route_id, vessel_type, fuel_type, year, ghg_intensity, fuel_consumption, distance, total_emissions, is_baseline
+        , ship_id
         FROM routes
         WHERE year = $1
         ORDER BY id ASC
@@ -127,5 +133,23 @@ export class PostgresRouteRepository implements RouteRepository {
     );
 
     return result.rows.map(mapRoute);
+  }
+
+  async getByShipIdAndYear(shipId: string, year: number): Promise<Route | undefined> {
+    const result = await this.db.query<RouteRow>(
+      `
+        SELECT id, route_id, ship_id, vessel_type, fuel_type, year, ghg_intensity, fuel_consumption, distance, total_emissions, is_baseline
+        FROM routes
+        WHERE ship_id = $1 AND year = $2
+        LIMIT 1
+      `,
+      [shipId, year]
+    );
+
+    if (result.rows.length === 0) {
+      return undefined;
+    }
+
+    return mapRoute(result.rows[0]);
   }
 }

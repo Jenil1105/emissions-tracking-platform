@@ -1,8 +1,6 @@
 import type { PoolRepository } from "../ports/poolRepository";
 import type { RouteRepository } from "../ports/routeRepository";
 import type { BankingRepository } from "../ports/bankingRepository";
-import { distributeBankingToRoutes } from "./distributeBankingToRoutes";
-
 const TARGET_GHG_INTENSITY = 89.3368;
 const ENERGY_FACTOR = 41000;
 
@@ -13,36 +11,32 @@ export class CreatePool {
     private readonly bankingRepository: BankingRepository
   ) {}
 
-  async execute(year: number, routeIds: string[]) {
+  async execute(year: number, shipIds: string[]) {
     const routes = (await this.routeRepository.getByYear(year))
-      .filter((route) => routeIds.includes(route.routeId));
+      .filter((route) => shipIds.includes(route.shipId));
 
-    if (routes.length !== routeIds.length) {
-      return { error: "Some routes were not found for the selected year" };
+    if (routes.length !== shipIds.length) {
+      return { error: "Some ships were not found for the selected year" };
     }
 
-    const baseBalances = routes.map((route) => {
+    const members = await Promise.all(routes.map(async (route) => {
       const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
+      const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+      const records = await this.bankingRepository.getRecords(route.shipId, year);
+      const banked = records
+        .filter((record) => record.type === "BANK")
+        .reduce((sum, record) => sum + record.amount, 0);
+      const applied = records
+        .filter((record) => record.type === "APPLY")
+        .reduce((sum, record) => sum + record.amount, 0);
+
       return {
+        shipId: route.shipId,
         routeId: route.routeId,
-        year: route.year,
-        cbBefore: (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope,
+        cbBefore: cbBefore - banked + applied,
+        cbAfter: cbBefore - banked + applied,
       };
-    });
-
-    const records = await this.bankingRepository.getRecords();
-    const appliedForYear = records
-      .filter((record) => record.type === "APPLY" && record.year === year)
-      .reduce((sum, record) => sum + record.amount, 0);
-    const balancesAfterBanking = distributeBankingToRoutes(baseBalances, appliedForYear);
-
-    const members = balancesAfterBanking.map((balance) => {
-      return {
-        routeId: balance.routeId,
-        cbBefore: balance.cbAfterBanking,
-        cbAfter: balance.cbAfterBanking,
-      };
-    });
+    }));
 
     const total = members.reduce((sum, member) => sum + member.cbBefore, 0);
 
@@ -79,12 +73,12 @@ export class CreatePool {
 
     const invalidDeficit = members.some((member) => member.cbBefore < 0 && member.cbAfter < member.cbBefore);
     if (invalidDeficit) {
-      return { error: "Deficit route cannot exit worse after pooling" };
+      return { error: "Deficit ship cannot exit worse after pooling" };
     }
 
     const invalidSurplus = members.some((member) => member.cbBefore > 0 && member.cbAfter < 0);
     if (invalidSurplus) {
-      return { error: "Surplus route cannot exit negative after pooling" };
+      return { error: "Surplus ship cannot exit negative after pooling" };
     }
 
     return this.poolRepository.create(year, members);

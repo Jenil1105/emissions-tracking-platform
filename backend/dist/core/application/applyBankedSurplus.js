@@ -6,12 +6,12 @@ class ApplyBankedSurplus {
     constructor(bankingRepository) {
         this.bankingRepository = bankingRepository;
     }
-    execute(shipId, year, amount) {
-        const records = this.bankingRepository.getRecords(shipId, year);
-        const banked = records
+    async execute(shipId, year, amount) {
+        const globalRecords = await this.bankingRepository.getRecords();
+        const banked = globalRecords
             .filter((record) => record.type === "BANK")
             .reduce((sum, record) => sum + record.amount, 0);
-        const appliedAlready = records
+        const appliedAlready = globalRecords
             .filter((record) => record.type === "APPLY")
             .reduce((sum, record) => sum + record.amount, 0);
         const availableBanked = banked - appliedAlready;
@@ -21,7 +21,7 @@ class ApplyBankedSurplus {
         if (amount > availableBanked) {
             return { error: "Amount exceeds available banked surplus" };
         }
-        const record = this.bankingRepository.create(shipId, year, amount, "APPLY");
+        const record = await this.bankingRepository.create(shipId, year, amount, "APPLY");
         return {
             shipId,
             year,

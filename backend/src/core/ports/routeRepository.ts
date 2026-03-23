@@ -11,4 +11,5 @@ export interface RouteRepository {
   setBaseline(routeId: string): Promise<Route | undefined>;
   getBaseline(): Promise<Route | undefined>;
   getByYear(year: number): Promise<Route[]>;
+  getByShipIdAndYear(shipId: string, year: number): Promise<Route | undefined>;
 }

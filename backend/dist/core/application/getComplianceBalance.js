@@ -5,24 +5,33 @@ const TARGET_GHG_INTENSITY = 89.3368;
 const ENERGY_FACTOR = 41000;
 class GetComplianceBalance {
     routeRepository;
-    constructor(routeRepository) {
+    shipComplianceRepository;
+    constructor(routeRepository, shipComplianceRepository) {
         this.routeRepository = routeRepository;
+        this.shipComplianceRepository = shipComplianceRepository;
     }
-    execute(shipId, year) {
-        const route = this.routeRepository.getByShipIdAndYear(shipId, year);
+    async execute(shipId, year) {
+        const route = await this.routeRepository.getByShipIdAndYear(shipId, year);
         if (!route) {
             return undefined;
         }
         const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
-        const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+        const complianceBalance = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+        await this.shipComplianceRepository.saveSnapshot({
+            shipId,
+            year,
+            cbGco2eq: complianceBalance,
+            ghgIntensity: route.ghgIntensity,
+            energyInScope,
+        });
         return {
             shipId,
             routeId: route.routeId,
             year,
             ghgIntensity: route.ghgIntensity,
             energyInScope,
-            complianceBalance: cbBefore,
-            cbBefore,
+            complianceBalance,
+            cbBefore: complianceBalance,
         };
     }
 }

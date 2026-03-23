@@ -10,44 +10,51 @@ export class BankSurplus {
     private readonly bankingRepository: BankingRepository
   ) {}
 
-  async execute(year: number, amount?: number) {
-    const routes = await this.routeRepository.getByYear(year);
+  async execute(shipId: string, year: number, amount?: number) {
+    const route = await this.routeRepository.getByShipIdAndYear(shipId, year);
 
-    if (routes.length === 0) {
-      return { error: "No routes found for the selected year" };
+    if (!route) {
+      return { error: "Route not found for the selected ship and year" };
     }
 
-    const cbBefore = routes.reduce((sum, route) => {
-      const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
-      return sum + (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
-    }, 0);
-    const existingRecords = await this.bankingRepository.getRecords();
+    const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
+    const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+    const existingRecords = await this.bankingRepository.getRecords(shipId, year);
     const banked = existingRecords
       .filter((record) => record.type === "BANK")
       .reduce((sum, record) => sum + record.amount, 0);
     const applied = existingRecords
       .filter((record) => record.type === "APPLY")
       .reduce((sum, record) => sum + record.amount, 0);
+    const availableToBank = cbBefore - banked + applied;
 
-    if (cbBefore <= 0) {
+    if (availableToBank <= 0) {
       return { error: "Only positive compliance balance can be banked" };
     }
 
-    const bankAmount = amount ?? cbBefore;
+    const bankAmount = amount ?? availableToBank;
 
-    if (bankAmount <= 0 || bankAmount > cbBefore) {
+    if (bankAmount <= 0 || bankAmount > availableToBank) {
       return { error: "Invalid bank amount" };
     }
 
-    const record = await this.bankingRepository.create(year, bankAmount, "BANK");
-    const totalBanked = banked - applied + bankAmount;
+    const record = await this.bankingRepository.create(shipId, year, bankAmount, "BANK");
+    const allRecords = await this.bankingRepository.getRecords();
+    const globalBanked = allRecords
+      .filter((entry) => entry.type === "BANK")
+      .reduce((sum, entry) => sum + entry.amount, 0);
+    const globalApplied = allRecords
+      .filter((entry) => entry.type === "APPLY")
+      .reduce((sum, entry) => sum + entry.amount, 0);
+    const totalBanked = globalBanked - globalApplied;
 
     return {
+      shipId,
       year,
       record,
       cbBefore,
       applied,
-      cbAfter: cbBefore - bankAmount,
+      cbAfter: availableToBank - bankAmount,
       totalBanked,
     };
   }

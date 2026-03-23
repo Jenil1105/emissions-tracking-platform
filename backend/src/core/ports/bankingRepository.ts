@@ -1,6 +1,6 @@
 import type { BankEntry } from "../domain/BankEntry";
 
 export interface BankingRepository {
-  getRecords(): Promise<BankEntry[]>;
-  create(year: number, amount: number, type: "BANK" | "APPLY"): Promise<BankEntry>;
+  getRecords(shipId?: string, year?: number): Promise<BankEntry[]>;
+  create(shipId: string, year: number, amount: number, type: "BANK" | "APPLY"): Promise<BankEntry>;
 }

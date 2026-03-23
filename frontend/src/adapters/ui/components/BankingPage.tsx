@@ -3,6 +3,7 @@ import type { BankingRecordsResponse, ComplianceBalanceResponse, Route } from ".
 type BankingPageProps = {
   routes: Route[];
   selectedYear: string;
+  selectedShipId: string;
   complianceBalance: ComplianceBalanceResponse | null;
   bankingRecords: BankingRecordsResponse | null;
   loading: boolean;
@@ -10,6 +11,7 @@ type BankingPageProps = {
   bankAmount: string;
   applyAmount: string;
   onYearChange: (year: string) => void;
+  onShipChange: (shipId: string) => void;
   onBankAmountChange: (value: string) => void;
   onApplyAmountChange: (value: string) => void;
   onBank: () => void;
@@ -22,6 +24,7 @@ const primaryButtonClass = "rounded-2xl bg-[#0f766e] px-5 py-3 text-sm font-semi
 function BankingPage({
   routes,
   selectedYear,
+  selectedShipId,
   complianceBalance,
   bankingRecords,
   loading,
@@ -29,12 +32,14 @@ function BankingPage({
   bankAmount,
   applyAmount,
   onYearChange,
+  onShipChange,
   onBankAmountChange,
   onApplyAmountChange,
   onBank,
   onApply,
 }: BankingPageProps) {
   const yearOptions = Array.from(new Set(routes.map((route) => String(route.year))));
+  const shipOptions = routes.filter((route) => !selectedYear || String(route.year) === selectedYear);
   const canBank = (complianceBalance?.cbAfter ?? complianceBalance?.cbBefore ?? 0) > 0;
   const canApply = (complianceBalance?.cbAfter ?? complianceBalance?.cbBefore ?? 0) < 0
     && (bankingRecords?.totalBanked ?? 0) > 0;
@@ -44,19 +49,29 @@ function BankingPage({
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="text-sm uppercase tracking-[0.3em] text-amber-700">Banking</p>
-          <h2 className="mt-2 font-serif text-3xl text-slate-900">Yearly surplus control room</h2>
+          <h2 className="mt-2 font-serif text-3xl text-slate-900">Ship-level surplus control room</h2>
           <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-            Review annual compliance balance, bank positive surplus, and apply stored balance when a year falls short.
+            Review one ship-year balance, bank local surplus, and apply from the global banked pool across ships and years.
           </p>
         </div>
-        <select className={`${fieldClass} min-w-44`} value={selectedYear} onChange={(event) => onYearChange(event.target.value)}>
-          <option value="">Select Year</option>
-          {yearOptions.map((year) => (
-            <option key={year} value={year}>
-              {year}
-            </option>
-          ))}
-        </select>
+        <div className="flex flex-col gap-3 sm:flex-row">
+          <select className={`${fieldClass} min-w-44`} value={selectedYear} onChange={(event) => onYearChange(event.target.value)}>
+            <option value="">Select Year</option>
+            {yearOptions.map((year) => (
+              <option key={year} value={year}>
+                {year}
+              </option>
+            ))}
+          </select>
+          <select className={`${fieldClass} min-w-52`} value={selectedShipId} onChange={(event) => onShipChange(event.target.value)}>
+            <option value="">Select Ship</option>
+            {shipOptions.map((route) => (
+              <option key={`${route.year}-${route.shipId}`} value={route.shipId}>
+                {route.shipId} ({route.routeId})
+              </option>
+            ))}
+          </select>
+        </div>
       </div>
 
       {loading && <p className="rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-700">Loading banking data...</p>}
@@ -65,20 +80,21 @@ function BankingPage({
       {!loading && !error && complianceBalance && (
         <div className="grid gap-4 lg:grid-cols-4">
           <div className="rounded-[1.5rem] border border-teal-100 bg-teal-50 p-5">
-            <p className="text-xs uppercase tracking-[0.24em] text-teal-700">Year</p>
-            <p className="mt-3 text-3xl font-semibold text-slate-900">{complianceBalance.year}</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-teal-700">Ship / year</p>
+            <p className="mt-3 text-xl font-semibold text-slate-900">{complianceBalance.shipId}</p>
+            <p className="mt-1 text-sm text-slate-600">{complianceBalance.year} | {complianceBalance.routeId}</p>
           </div>
           <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">CB before</p>
-            <p className="mt-3 text-2xl font-semibold text-slate-900">{(complianceBalance.cbBefore ?? complianceBalance.complianceBalance).toFixed(2)}</p>
+            <p className="mt-3 text-2xl font-semibold text-slate-900">{complianceBalance.cbBefore.toFixed(2)}</p>
           </div>
           <div className="rounded-[1.5rem] border border-slate-200 bg-white p-5">
             <p className="text-xs uppercase tracking-[0.24em] text-slate-500">CB after</p>
-            <p className="mt-3 text-2xl font-semibold text-slate-900">{(complianceBalance.cbAfter ?? complianceBalance.complianceBalance).toFixed(2)}</p>
+            <p className="mt-3 text-2xl font-semibold text-slate-900">{(complianceBalance.cbAfter ?? complianceBalance.cbBefore).toFixed(2)}</p>
           </div>
           <div className="rounded-[1.5rem] border border-amber-100 bg-amber-50 p-5">
-            <p className="text-xs uppercase tracking-[0.24em] text-amber-700">Banked total</p>
-            <p className="mt-3 text-2xl font-semibold text-slate-900">{(bankingRecords?.totalBanked ?? 0).toFixed(2)}</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-amber-700">Applied</p>
+            <p className="mt-3 text-2xl font-semibold text-slate-900">{(bankingRecords?.applied ?? 0).toFixed(2)}</p>
           </div>
         </div>
       )}
@@ -99,6 +115,10 @@ function BankingPage({
               <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
                 <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Weighted GHG intensity</p>
                 <p className="mt-2 text-lg font-semibold text-slate-900">{complianceBalance.ghgIntensity.toFixed(4)}</p>
+              </div>
+              <div className="rounded-2xl border border-slate-200 bg-slate-50 p-4 sm:col-span-2">
+                <p className="text-xs uppercase tracking-[0.24em] text-slate-500">Available global banked balance</p>
+                <p className="mt-2 text-lg font-semibold text-slate-900">{(bankingRecords?.totalBanked ?? 0).toFixed(2)}</p>
               </div>
             </div>
           </div>
@@ -145,6 +165,7 @@ function BankingPage({
               <thead className="bg-slate-50 text-xs uppercase tracking-[0.24em] text-slate-500">
                 <tr>
                   <th className="px-5 py-4">Record</th>
+                  <th className="px-5 py-4">Ship</th>
                   <th className="px-5 py-4">Year</th>
                   <th className="px-5 py-4">Amount</th>
                   <th className="px-5 py-4">Type</th>
@@ -154,6 +175,7 @@ function BankingPage({
                 {bankingRecords.records.map((record) => (
                   <tr key={record.id} className="border-t border-slate-100 hover:bg-slate-50/80">
                     <td className="px-5 py-4 font-semibold text-slate-900">#{record.id}</td>
+                    <td className="px-5 py-4">{record.shipId}</td>
                     <td className="px-5 py-4">{record.year}</td>
                     <td className="px-5 py-4">{record.amount}</td>
                     <td className="px-5 py-4">

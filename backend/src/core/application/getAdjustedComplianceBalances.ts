@@ -1,6 +1,5 @@
 import type { BankingRepository } from "../ports/bankingRepository";
 import type { RouteRepository } from "../ports/routeRepository";
-import { distributeBankingToRoutes } from "./distributeBankingToRoutes";
 
 const TARGET_GHG_INTENSITY = 89.3368;
 const ENERGY_FACTOR = 41000;
@@ -11,22 +10,32 @@ export class GetAdjustedComplianceBalances {
     private readonly bankingRepository: BankingRepository
   ) {}
 
-  async execute(year: number) {
+  async execute(year: number, shipId?: string) {
     const routes = await this.routeRepository.getByYear(year);
-    const records = await this.bankingRepository.getRecords();
-    const appliedForYear = records
-      .filter((record) => record.type === "APPLY" && record.year === year)
-      .reduce((sum, record) => sum + record.amount, 0);
+    const scopedRoutes = shipId
+      ? routes.filter((route) => route.shipId === shipId)
+      : routes;
 
-    const balances = routes.map((route) => {
+    return Promise.all(scopedRoutes.map(async (route) => {
       const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
+      const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+      const records = await this.bankingRepository.getRecords(route.shipId, year);
+      const banked = records
+        .filter((record) => record.type === "BANK")
+        .reduce((sum, record) => sum + record.amount, 0);
+      const applied = records
+        .filter((record) => record.type === "APPLY")
+        .reduce((sum, record) => sum + record.amount, 0);
+
       return {
+        shipId: route.shipId,
         routeId: route.routeId,
         year: route.year,
-        cbBefore: (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope,
+        cbBefore,
+        banked,
+        applied,
+        cbAfterBanking: cbBefore - banked + applied,
       };
-    });
-
-    return distributeBankingToRoutes(balances, appliedForYear);
+    }));
   }
 }

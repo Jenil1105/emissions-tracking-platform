@@ -3,12 +3,12 @@ import type { BankingRepository } from "../ports/bankingRepository";
 export class ApplyBankedSurplus {
   constructor(private readonly bankingRepository: BankingRepository) {}
 
-  async execute(year: number, amount: number) {
-    const records = await this.bankingRepository.getRecords();
-    const banked = records
+  async execute(shipId: string, year: number, amount: number) {
+    const globalRecords = await this.bankingRepository.getRecords();
+    const banked = globalRecords
       .filter((record) => record.type === "BANK")
       .reduce((sum, record) => sum + record.amount, 0);
-    const appliedAlready = records
+    const appliedAlready = globalRecords
       .filter((record) => record.type === "APPLY")
       .reduce((sum, record) => sum + record.amount, 0);
     const availableBanked = banked - appliedAlready;
@@ -21,9 +21,10 @@ export class ApplyBankedSurplus {
       return { error: "Amount exceeds available banked surplus" };
     }
 
-    const record = await this.bankingRepository.create(year, amount, "APPLY");
+    const record = await this.bankingRepository.create(shipId, year, amount, "APPLY");
 
     return {
+      shipId,
       year,
       record,
       applied: amount,

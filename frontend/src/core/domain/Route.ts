@@ -1,6 +1,7 @@
 export type Route = {
   id: number;
   routeId: string;
+  shipId: string;
   vesselType: string;
   fuelType: string;
   year: number;
@@ -29,12 +30,14 @@ export type ComparisonResponse = {
 
 export type BankingRecord = {
   id: number;
+  shipId: string;
   year: number;
   amount: number;
   type: "BANK" | "APPLY";
 };
 
 export type BankingRecordsResponse = {
+  shipId: string;
   year: number;
   records: BankingRecord[];
   banked: number;
@@ -43,24 +46,29 @@ export type BankingRecordsResponse = {
 };
 
 export type ComplianceBalanceResponse = {
+  shipId: string;
+  routeId: string;
   year: number;
   ghgIntensity: number;
   energyInScope: number;
   complianceBalance: number;
-  cbBefore?: number;
+  cbBefore: number;
   applied?: number;
   cbAfter?: number;
 };
 
 export type AdjustedComplianceBalance = {
+  shipId: string;
   routeId: string;
   year: number;
   cbBefore: number;
-  bankingAdjustment: number;
+  banked: number;
+  applied: number;
   cbAfterBanking: number;
 };
 
 export type PoolMember = {
+  shipId: string;
   routeId: string;
   cbBefore: number;
   cbAfter: number;

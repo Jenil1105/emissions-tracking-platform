@@ -7,12 +7,12 @@ class GetRouteComparison {
     constructor(routeRepository) {
         this.routeRepository = routeRepository;
     }
-    execute() {
-        const baseline = this.routeRepository.getBaseline();
+    async execute() {
+        const baseline = await this.routeRepository.getBaseline();
         if (!baseline) {
             return undefined;
         }
-        const allRoutes = this.routeRepository.getAll();
+        const allRoutes = await this.routeRepository.getAll();
         const comparisonRoutes = allRoutes
             .filter((route) => route.id !== baseline.id)
             .map((route) => ({

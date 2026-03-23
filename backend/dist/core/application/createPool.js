@@ -6,27 +6,35 @@ const ENERGY_FACTOR = 41000;
 class CreatePool {
     routeRepository;
     poolRepository;
-    constructor(routeRepository, poolRepository) {
+    bankingRepository;
+    constructor(routeRepository, poolRepository, bankingRepository) {
         this.routeRepository = routeRepository;
         this.poolRepository = poolRepository;
+        this.bankingRepository = bankingRepository;
     }
-    execute(year, shipIds) {
-        const routes = this.routeRepository
-            .getByYear(year)
+    async execute(year, shipIds) {
+        const routes = (await this.routeRepository.getByYear(year))
             .filter((route) => shipIds.includes(route.shipId));
         if (routes.length !== shipIds.length) {
             return { error: "Some ships were not found for the selected year" };
         }
-        const members = routes.map((route) => {
+        const members = await Promise.all(routes.map(async (route) => {
             const energyInScope = route.fuelConsumption * ENERGY_FACTOR;
             const cbBefore = (TARGET_GHG_INTENSITY - route.ghgIntensity) * energyInScope;
+            const records = await this.bankingRepository.getRecords(route.shipId, year);
+            const banked = records
+                .filter((record) => record.type === "BANK")
+                .reduce((sum, record) => sum + record.amount, 0);
+            const applied = records
+                .filter((record) => record.type === "APPLY")
+                .reduce((sum, record) => sum + record.amount, 0);
             return {
                 shipId: route.shipId,
                 routeId: route.routeId,
-                cbBefore,
-                cbAfter: cbBefore,
+                cbBefore: cbBefore - banked + applied,
+                cbAfter: cbBefore - banked + applied,
             };
-        });
+        }));
         const total = members.reduce((sum, member) => sum + member.cbBefore, 0);
         if (total < 0) {
             return { error: "Pool sum must be zero or positive" };
@@ -60,8 +68,7 @@ class CreatePool {
         if (invalidSurplus) {
             return { error: "Surplus ship cannot exit negative after pooling" };
         }
-        const pool = this.poolRepository.create(year, members);
-        return pool;
+        return this.poolRepository.create(year, members);
     }
 }
 exports.CreatePool = CreatePool;
